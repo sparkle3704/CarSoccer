@@ -115,7 +115,8 @@ void closeEverything() {
 }
 
 bool quit = false;
-SDL_Texture* carB = NULL;
+SDL_Texture* carTexture = NULL;
+SDL_Texture* ballTexture = NULL;
 SDL_Rect carRect;
 
 const float FRICTION = 0.1f;
@@ -128,12 +129,12 @@ const float GRAVITY_ACCELERATION = 5.0f;
 const float JUMP_VELOCITY = 7;
 const float JUMP_DRAG_ACCELERATION = 100;
 
-const float DODGE_SPIN_FACTOR = 18;
+const float DODGE_SPIN_FACTOR = 15;
 const float MAX_BOOST_VELOCITY = 8;
 const float BOOST_ACCELERATION = 6;
 
 //const float DODGE_VELOCITY_X = 5;
-const float DODGE_VELOCITY = 7;
+const float DODGE_VELOCITY = 7; // 7
 
 struct Point {
     float x, y;
@@ -278,14 +279,13 @@ float getAngle(const std::vector<Point>& points) {
 
 class Car {
 public:
-    float weight;
     float mass;
     float velocityX;
     float velocityY;
     float accelerationX;
     float accelerationY;
-    float xPos;
-    float yPos;
+    float xPos; // centerX
+    float yPos; // centerY
     bool onGround;
     bool jumping;
     float angle;
@@ -316,8 +316,8 @@ public:
     float dodgeVelocityY = 0;
 //    vector<vector<Point>> corner{2, vector<Point>(2)};
 
-    Car(float weight, float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width) :
-        weight(weight), mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), onGround(onGround), jumping(jumping), angle(angle), dir(dir), flip(flip), clockWise(clockWise), pointing(pointing), width(width) {}
+    Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width) :
+        mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), onGround(onGround), jumping(jumping), angle(angle), dir(dir), flip(flip), clockWise(clockWise), pointing(pointing), width(width) {}
 
 
     bool hasCollision() {
@@ -335,19 +335,19 @@ public:
 
         std::cerr << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
         if (maxX >= WINDOW_WIDTH) {
-            std::cerr << "Hit right wall!" << "maxX = " << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
+//            std::cerr << "Hit right wall!" << "maxX = " << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
             return 1;
         }
         if (minX <= 0) {
-            std::cerr << "Hit left wall!" << "\n";
+//            std::cerr << "Hit left wall!" << "\n";
             return 1;
         }
         if (minY <= 0) {
-            std::cerr << "Hit ceiling!" << "\n";
+//            std::cerr << "Hit ceiling!" << "\n";
             return 1;
         }
         if (maxY >= groundY) {
-            std::cerr << "Hit ground" << "\n";
+//            std::cerr << "Hit ground" << "\n";
             return 1;
         }
         return 0;
@@ -366,9 +366,9 @@ public:
         float maxX = max({x1, x2, x3, x4});
         float maxY = max({y1, y2, y3, y4});
 
-        std::cerr << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
+//        std::cerr << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
         if (maxY >= groundY) {
-            std::cerr << "Hit ground" << "\n";
+//            std::cerr << "Hit ground" << "\n";
             return 1;
         }
         return 0;
@@ -454,9 +454,9 @@ public:
 //                angle -= ROTATE_FACTOR;
             }
         }
-//        correctAngle();
-//        correctPosition();
-        return;
+        correctAngle();
+        correctPosition();
+
         if (angle >= 360) {
             angle = angle - 360;
         }
@@ -479,9 +479,8 @@ public:
 //                angle += ROTATE_FACTOR;
             }
         }
-//        correctAngle();
-//        correctPosition();
-        return;
+        correctAngle();
+        correctPosition();
 
         if (angle >= 360) {
             angle = angle - 360;
@@ -605,7 +604,7 @@ public:
     void applyGravity() {
         if (onGround == 0) {
             initialGravityAccelerationY = GRAVITY_ACCELERATION;
-            std::cerr << "not on ground anymore, aY = gravity" << "\n";
+//            std::cerr << "not on ground anymore, aY = gravity" << "\n";
 //            ;
         }
     }
@@ -626,10 +625,30 @@ public:
 
         if (sign == 1) {
             if (prvSign == -1) {
+
+                if (velocityY == 0) {
+                    boostVelocity = abs(velocityX);
+                }
+                else {
+                    boostVelocity = 0;
+                }
+//                boostVelocity = abs(goingVelocityX);
+//                sqrt((velocityX + accelerationX*deltaTicks)*(velocityX + accelerationX*deltaTicks) + (velocityY + accelerationY*deltaTicks)*(velocityY + accelerationY*deltaTicks))
+//                boostVelocity = sqrt((velocityX + accelerationX*deltaTicks)*(velocityX + accelerationX*deltaTicks) + (velocityY + accelerationY*deltaTicks)*(velocityY + accelerationY*deltaTicks)) - sign*BOOST_ACCELERATION*deltaTicks*2;
                 gravityVelocityY = GRAVITY_ACCELERATION/5;
             }
             else {
+                goingVelocityX = 0;
                 gravityVelocityY = GRAVITY_ACCELERATION/5;
+            }
+        }
+        else {
+            if (prvSign == 1) {
+                if (velocityY == 0) {
+                    if (goingVelocityX != 0) {
+                        boostVelocity -= sign*BOOST_ACCELERATION * deltaTicks;
+                    }
+                }
             }
         }
         if (dir != prvDir) {
@@ -639,6 +658,7 @@ public:
         boostVelocity += sign*BOOST_ACCELERATION * deltaTicks;
         boostVelocity = min(boostVelocity, MAX_BOOST_VELOCITY);
         boostVelocity = max(boostVelocity, 0.0f);
+
 
         Point projected = findParallelVector(tmp[1], tmp[0], boostVelocity);
         boostVelocityX = projected.x;
@@ -732,8 +752,20 @@ public:
 //        velocityX += accelerationX + goingVelocity;
 //        velocityY += gravityVelocityY;
 
-        if (boostVelocity != 0) {
-            goingVelocityX = 0;
+//        if (boostVelocity != 0) {
+//            goingVelocityX = 0;
+////        }
+//        if (curSign == 1 && prvSign == 1) {
+//            goingVelocityX = 0;
+//        }
+        if (curSign == 1) {
+            if (prvSign == 1) {
+                std::cerr << "====================" << "\n";
+                std::cerr << "====================" << "\n";
+                std::cerr << "====================" << "\n";
+                std::cerr << "====================" << "\n";
+//                goingVelocityX = 0;
+            }
         }
         if (spinningClockWise) {
             if (spinnedClockWise == 360) {
@@ -745,6 +777,7 @@ public:
                 initialGravityAccelerationY = GRAVITY_ACCELERATION;
             }
             else {
+//                std::cerr << "SPINNING CLOCKWISE";
                 spinnedClockWise += DODGE_SPIN_FACTOR;
                 angle += DODGE_SPIN_FACTOR;
                 gravityVelocityY = 0;
@@ -811,18 +844,18 @@ public:
 //            boostVelocityY += initialBoostAccelerationY * deltaTicks;
 //        }
 
-        std::cerr << "boostX = " << boostVelocityX << "\n";
-        std::cerr << "boostY = " << boostVelocityY << "\n";
-        std::cerr << "jump velocity X = " << jumpVelocityX << ", " << "dragX = " << initialJumpDragAccelerationX << "\n";
-        std::cerr << "jump velocity Y = " << jumpVelocityY << ", " << "dragX = " << initialJumpDragAccelerationY << "\n";
+//        std::cerr << "boostX = " << boostVelocityX << "\n";
+//        std::cerr << "boostY = " << boostVelocityY << "\n";
+//        std::cerr << "jump velocity X = " << jumpVelocityX << ", " << "dragX = " << initialJumpDragAccelerationX << "\n";
+//        std::cerr << "jump velocity Y = " << jumpVelocityY << ", " << "dragX = " << initialJumpDragAccelerationY << "\n";
         if (jumpVelocityY != 0) {
             std::cerr << "JUMP VELOCITYX not 0++++++++" << "\n";
         }
         if (abs(initialJumpDragAccelerationX) * deltaTicks > abs(jumpVelocityX)) {
-            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
-            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
-            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
-            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
+//            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
+//            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
+//            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
+//            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
 
             jumpVelocityX = 0;
             initialJumpDragAccelerationX = 0;
@@ -832,10 +865,10 @@ public:
         }
 
         if (abs(initialJumpDragAccelerationY) * deltaTicks > abs(jumpVelocityY)) {
-            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
-            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
-            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
-            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
+//            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
+//            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
+//            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
+//            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
             jumpVelocityY = 0;
             initialJumpDragAccelerationY = 0;
         }
@@ -880,7 +913,7 @@ public:
 
 
     void dodgeDown() {
-        if (spinningCounterClockWise || spinningCounterClockWise) {
+        if (spinningClockWise || spinningCounterClockWise) {
             return;
         }
         if (clockWise == 0) {
@@ -901,13 +934,13 @@ public:
         float maxX = max({x1, x2, x3, x4});
         float maxY = max({y1, y2, y3, y4});
 
-        Point projected = findParallelVector(tmp[1], tmp[0], DODGE_VELOCITY);
+        Point projected = findParallelVector(tmp[2], tmp[0], DODGE_VELOCITY);
         dodgeVelocityX = projected.x;
         dodgeVelocityY = projected.y;
     }
 
     void dodgeUp() {
-        if (spinningCounterClockWise || spinningCounterClockWise) {
+        if (spinningClockWise || spinningCounterClockWise) {
             return;
         }
         if (clockWise == 0) {
@@ -927,17 +960,15 @@ public:
         float minY = min({y1, y2, y3, y4});
         float maxX = max({x1, x2, x3, x4});
         float maxY = max({y1, y2, y3, y4});
-
-        Point projected = findParallelVector(tmp[1], tmp[0], DODGE_VELOCITY);
+//
+        Point projected = findParallelVector(tmp[2], tmp[0], DODGE_VELOCITY);
         dodgeVelocityX = -projected.x;
         dodgeVelocityY = -projected.y;
     }
 
-
-
     void initSize() {
         int w, h;
-        SDL_QueryTexture(carB, NULL, NULL, &w, &h);
+        SDL_QueryTexture(carTexture, NULL, NULL, &w, &h);
         float scale = width / float(w);
         height = float(h) * scale;
     }
@@ -964,8 +995,8 @@ public:
         Point projected_v1 = projected[0]; // clockwise
         Point projected_v2 = projected[1]; // counterclockwise
 
-        std::cerr << "jump velocity x = " << jumpVelocityX << "\n";
-        std::cerr << "jump velocity y = " << jumpVelocityY << "\n";
+//        std::cerr << "jump velocity x = " << jumpVelocityX << "\n";
+//        std::cerr << "jump velocity y = " << jumpVelocityY << "\n";
         float deltaVx, deltaVy;
         if (flip == SDL_FLIP_NONE) {
             deltaVx = projected_v1.x;
@@ -975,20 +1006,20 @@ public:
             deltaVx = projected_v2.x;
             deltaVy = projected_v2.y;
         }
-        std::cerr << "gravity velocity y = " << gravityVelocityY << "\n";
-        std::cerr << "A(" << tmp[1].x << ", " << tmp[1].y << ")" << " ";
-        std::cerr << "B(" << tmp[0].x << ", " << tmp[0].y << ")" << "\n";
-        std::cerr << "jump VX = " << deltaVx << "\n";
-        std::cerr << "jump VY = " << deltaVy << "\n";
+//        std::cerr << "gravity velocity y = " << gravityVelocityY << "\n";
+//        std::cerr << "A(" << tmp[1].x << ", " << tmp[1].y << ")" << " ";
+//        std::cerr << "B(" << tmp[0].x << ", " << tmp[0].y << ")" << "\n";
+//        std::cerr << "jump VX = " << deltaVx << "\n";
+//        std::cerr << "jump VY = " << deltaVy << "\n";
 //        int w, h;
-//        SDL_QueryTexture(carB, NULL, NULL, &w, &h);
+//        SDL_QueryTexture(carTexture, NULL, NULL, &w, &h);
 //
 //        float scale = 100.0f / w;
 //        w *= scale;
 //        h *= scale;
-
-        std::cerr << "\n";
-        std::cerr << "car width = " << width << ", " << "car height = " << height << "\n";
+//
+//        std::cerr << "\n";
+//        std::cerr << "car width = " << width << ", " << "car height = " << height << "\n";
 //        std::cerr << "======" << "\n";
         std::cerr << "xPos = " << xPos << ", " << "yPos = " << yPos << "\n";
 //        SDL_FPoint center = {width/2, height/2};
@@ -1025,7 +1056,7 @@ public:
 
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_RenderDrawPoint(renderer, tmp[i].x, tmp[i].y);
-                SDL_RenderCopyExF(renderer, carB, NULL, &carRect, angle, &center, SDL_FLIP_VERTICAL);
+                SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, SDL_FLIP_VERTICAL);
                 SDL_RenderPresent(renderer);
                 SDL_Delay(1000);
             }
@@ -1059,7 +1090,7 @@ public:
         std::cerr << "pointing = " << pointing << ", " << (pointing ? "pointing right" : "pointing left  ") << "\n";
         std::cerr << (flip == SDL_FLIP_VERTICAL ? "vertical flipped" : "                      ") << "\n";
         std::cerr << "\n";
-        SDL_RenderCopyExF(renderer, carB, NULL, &carRect, angle, &center, flip);
+        SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
     }
 
     void jump() {
@@ -1106,8 +1137,8 @@ public:
                 initialJumpVelocityY = projected_v2.y;
             }
 
-            std::cerr << "jump delta vx: " << initialJumpVelocityX << "\n";
-            std::cerr << "jump delta vy: " << initialJumpVelocityY << "\n";
+//            std::cerr << "jump delta vx: " << initialJumpVelocityX << "\n";
+//            std::cerr << "jump delta vy: " << initialJumpVelocityY << "\n";
 
             jumpVelocityX = initialJumpVelocityX;
             jumpVelocityY = initialJumpVelocityY;
@@ -1158,7 +1189,7 @@ public:
             return;
         }
 //        int width = 100, height = 50;
-//        SDL_QueryTexture(carB, NULL, NULL, &width, &height);
+//        SDL_QueryTexture(carTexture, NULL, NULL, &width, &height);
 //
 //        float scale = 100.0f / w;
 //        w *= scale;
@@ -1186,7 +1217,7 @@ public:
         if (maxY >= groundY) {
             collideWithGround = 1;
             float delta = maxY - groundY;
-            std::cerr << "Collapsed with ground, delta=" << delta << "\n";
+//            std::cerr << "Collapsed with ground, delta=" << delta << "\n";
             y1 -= delta;
             y2 -= delta;
             y3 -= delta;
@@ -1199,7 +1230,7 @@ public:
         float deltaRotate = 20;
         if (collideWithGround) {
             if (angle > 0 && angle < 90) {
-                std::cerr << "<11111111111111111>" << "\n";
+//                std::cerr << "<11111111111111111>" << "\n";
                 float diff = angle;
                 if (deltaRotate > diff) {
                     deltaRotate = diff;
@@ -1207,7 +1238,7 @@ public:
                 angle -= deltaRotate;
             }
             else if (angle > 90 && angle < 180) {
-                std::cerr << "<22222222222222222>" << "\n";
+//                std::cerr << "<22222222222222222>" << "\n";
                 float diff = 180 - angle;
                 if (deltaRotate > diff) {
                     deltaRotate = diff;
@@ -1215,7 +1246,7 @@ public:
                 angle += deltaRotate;
             }
             else if (angle > 180 && angle < 270) {
-                std::cerr << "<33333333333333333>" << "\n";
+//                std::cerr << "<33333333333333333>" << "\n";
                 float diff = angle - 180;
                 if (deltaRotate > diff) {
                     deltaRotate = diff;
@@ -1223,7 +1254,7 @@ public:
                 angle -= deltaRotate;
             }
             else if (angle > 270 && angle < 360) {
-                std::cerr << "<444444444444444444>" << "\n";
+//                std::cerr << "<444444444444444444>" << "\n";
                 float diff = 360 - diff;
                 if (deltaRotate > diff) {
                     deltaRotate = diff;
@@ -1245,7 +1276,7 @@ public:
 
         if (maxY >= groundY) {
             float delta = maxY - groundY;
-            std::cerr << "Collapsed with ground, delta = " << delta << "\n";
+//            std::cerr << "Collapsed with ground, delta = " << delta << "\n";
             y1 -= delta;
             y2 -= delta;
             y3 -= delta;
@@ -1255,127 +1286,126 @@ public:
         }
     }
 
-    void handleWallCollision() {
-// Assume that the car has the following properties:
-// - x1, y1, x2, y2, x3, y3, x4, y4 are the coordinates of the 4 corners of the rectangle
-// - angle is the current angle of the car (in degrees)
-// - weight, mass, velocityX, velocityY, accelerationX, accelerationY are the properties of the car
-// - screenWidth and screenHeight are the dimensions of the screen
-// - wallAngle is the angle of the wall with respect to the x-axis
-
-// Check if any corner of the car lies outside the screen
-//        int width = 100, height = 50;
-//        SDL_QueryTexture(carB, NULL, NULL, &width, &height);
+//    void handleWallCollision() {
+//// Assume that the car has the following properties:
+//// - x1, y1, x2, y2, x3, y3, x4, y4 are the coordinates of the 4 corners of the rectangle
+//// - angle is the current angle of the car (in degrees)
+//// - weight, mass, velocityX, velocityY, accelerationX, accelerationY are the properties of the car
+//// - screenWidth and screenHeight are the dimensions of the screen
+//// - wallAngle is the angle of the wall with respect to the x-axis
 //
-//        float scale = 100.0f / width;
-//        width *= scale;
-//        height *= scale;
-//        SDL_FPoint center = {width/2, height/2};
-//        SDL_FPoint center = { width/2, height/2 };
+//// Check if any corner of the car lies outside the screen
+////        int width = 100, height = 50;
+////        SDL_QueryTexture(carTexture, NULL, NULL, &width, &height);
+////
+////        float scale = 100.0f / width;
+////        width *= scale;
+////        height *= scale;
+////        SDL_FPoint center = {width/2, height/2};
+////        SDL_FPoint center = { width/2, height/2 };
+//
+//
+//        SDL_FRect carRect = {xPos, yPos, width, height};
+//        vector<Point> tmp = getCoords(carRect, angle);
+//        float x1 = tmp[0].x, y1 = tmp[0].y;
+//        float x2 = tmp[1].x, y2 = tmp[1].y;
+//        float x3 = tmp[2].x, y3 = tmp[2].y;
+//        float x4 = tmp[3].x, y4 = tmp[3].y;
+//
+//        float minX = min({x1, x2, x3, x4});
+//        float minY = min({y1, y2, y3, y4});
+//        float maxX = max({x1, x2, x3, x4});
+//        float maxY = max({y1, y2, y3, y4});
+//
+//        bool isOutsideScreen = false;
+//        if (x1 <= 0 || x2 <= 0 || x3 <= 0 || x4 <= 0 ||
+//            x1 >= WINDOW_WIDTH || x2 >= WINDOW_WIDTH || x3 >= WINDOW_WIDTH || x4 >= WINDOW_WIDTH ||
+//            y1 <= 0 || y2 <= 0 || y3 <= 0 || y4 <= 0 ||
+//            y1 >= WINDOW_HEIGHT || y2 >= WINDOW_HEIGHT || y3 >= WINDOW_HEIGHT || y4 >= WINDOW_HEIGHT) {
+//            isOutsideScreen = true;
+//        }
+//
+//        float wallAngle;
+//        if (minX <= 0) {
+//            wallAngle = -M_PI/2;
+//        }
+//        if (maxX >= WINDOW_WIDTH) {
+//            wallAngle = M_PI/2;
+//        }
+//        if (minY <= 0) {
+//            wallAngle = M_PI;
+//        }
+//        if (maxY >= groundY) {
+//            wallAngle = 0;
+//        }
 
 
-        SDL_FRect carRect = {xPos, yPos, width, height};
-        vector<Point> tmp = getCoords(carRect, angle);
-        float x1 = tmp[0].x, y1 = tmp[0].y;
-        float x2 = tmp[1].x, y2 = tmp[1].y;
-        float x3 = tmp[2].x, y3 = tmp[2].y;
-        float x4 = tmp[3].x, y4 = tmp[3].y;
-
-        float minX = min({x1, x2, x3, x4});
-        float minY = min({y1, y2, y3, y4});
-        float maxX = max({x1, x2, x3, x4});
-        float maxY = max({y1, y2, y3, y4});
-
-        bool isOutsideScreen = false;
-        if (x1 <= 0 || x2 <= 0 || x3 <= 0 || x4 <= 0 ||
-            x1 >= WINDOW_WIDTH || x2 >= WINDOW_WIDTH || x3 >= WINDOW_WIDTH || x4 >= WINDOW_WIDTH ||
-            y1 <= 0 || y2 <= 0 || y3 <= 0 || y4 <= 0 ||
-            y1 >= WINDOW_HEIGHT || y2 >= WINDOW_HEIGHT || y3 >= WINDOW_HEIGHT || y4 >= WINDOW_HEIGHT) {
-            isOutsideScreen = true;
-        }
-
-        float wallAngle;
-        if (minX <= 0) {
-            wallAngle = -M_PI/2;
-        }
-        if (maxX >= WINDOW_WIDTH) {
-            wallAngle = M_PI/2;
-        }
-        if (minY <= 0) {
-            wallAngle = M_PI;
-        }
-        if (maxY >= groundY) {
-            wallAngle = 0;
-        }
-
-
-        if (isOutsideScreen) {
-            std::cerr << "OUTSIDEEEEEEEEEEEEEEEEEE" << " " << velocityY << " " << velocityX << "\n";
-            // Calculate the angle between the velocity vector of the car and the normal vector of the wall
-            double angleBetween = atan2(velocityY, velocityX) - wallAngle;
-            if (angleBetween < -M_PI) {
-                angleBetween += 2*M_PI;
-            } else if (angleBetween > M_PI) {
-                angleBetween -= 2*M_PI;
-            }
-            std::cerr << "angle between: " << angleBetween << "\n";
-            if (angleBetween < 0) {
-                // Apply a force to slow down the car and eventually stop it
-                double force = mass * accelerationX;
-                velocityX += force * cos(wallAngle);
-                velocityY += force * sin(wallAngle);
-
-                // Calculate the angle of rotation required to make the car parallel to the wall
-                double requiredAngle = wallAngle + 90;
-
-                // Apply a torque to rotate the car towards the required angle
-                double torque = weight * accelerationX * (requiredAngle - angle);
-                angle += torque;
-
-                // Calculate the penetration depth of the car into the wall
-                double penetrationDepth = 0;
-                if (wallAngle == -M_PI/2) {
-                    penetrationDepth = x1;
-                } else if (wallAngle == M_PI/2) {
-                    penetrationDepth = WINDOW_WIDTH - x1;
-                } else if (wallAngle == 0) {
-                    penetrationDepth = WINDOW_HEIGHT - y1;
-                } else if (wallAngle == M_PI) {
-                    penetrationDepth = y1;
-                }
-                penetrationDepth /= cos(angle - wallAngle);
-
-                // Move the car back by the penetration depth
-                x1 -= penetrationDepth * cos(angle);
-                y1 -= penetrationDepth * sin(angle);
-                x2 -= penetrationDepth * cos(angle);
-                y2 -= penetrationDepth * sin(angle);
-                x3 -= penetrationDepth * cos(angle);
-                y3 -= penetrationDepth * sin(angle);
-                x4 -= penetrationDepth * cos(angle);
-                y4 -= penetrationDepth * sin(angle);
-
-                x1 += velocityX;
-                y1 += velocityY;
-                x2 += velocityX;
-                y2 += velocityY;
-                x3 += velocityX;
-                y3 += velocityY;
-                x4 += velocityX;
-                y4 += velocityY;
-
-                vector<Point> manh = {{x1, y1}, {x2, y2}, {x3, y3}, {x4, y4}};
-                std::cerr << "                                        current angle: " << angle << "\n";
-                angle = getAngle(manh);
-                std::cerr << "                                        changing angleeeee to: " << angle << "\n";
-            }
-        }
-    }
+//        if (isOutsideScreen) {
+////            std::cerr << "OUTSIDEEEEEEEEEEEEEEEEEE" << " " << velocityY << " " << velocityX << "\n";
+//            // Calculate the angle between the velocity vector of the car and the normal vector of the wall
+//            double angleBetween = atan2(velocityY, velocityX) - wallAngle;
+//            if (angleBetween < -M_PI) {
+//                angleBetween += 2*M_PI;
+//            } else if (angleBetween > M_PI) {
+//                angleBetween -= 2*M_PI;
+//            }
+////            std::cerr << "angle between: " << angleBetween << "\n";
+//            if (angleBetween < 0) {
+//                // Apply a force to slow down the car and eventually stop it
+//                double force = mass * accelerationX;
+//                velocityX += force * cos(wallAngle);
+//                velocityY += force * sin(wallAngle);
+//
+//                // Calculate the angle of rotation required to make the car parallel to the wall
+//                double requiredAngle = wallAngle + 90;
+//
+//                // Apply a torque to rotate the car towards the required angle
+//                double torque = weight * accelerationX * (requiredAngle - angle);
+//                angle += torque;
+//
+//                // Calculate the penetration depth of the car into the wall
+//                double penetrationDepth = 0;
+//                if (wallAngle == -M_PI/2) {
+//                    penetrationDepth = x1;
+//                } else if (wallAngle == M_PI/2) {
+//                    penetrationDepth = WINDOW_WIDTH - x1;
+//                } else if (wallAngle == 0) {
+//                    penetrationDepth = WINDOW_HEIGHT - y1;
+//                } else if (wallAngle == M_PI) {
+//                    penetrationDepth = y1;
+//                }
+//                penetrationDepth /= cos(angle - wallAngle);
+//
+//                // Move the car back by the penetration depth
+//                x1 -= penetrationDepth * cos(angle);
+//                y1 -= penetrationDepth * sin(angle);
+//                x2 -= penetrationDepth * cos(angle);
+//                y2 -= penetrationDepth * sin(angle);
+//                x3 -= penetrationDepth * cos(angle);
+//                y3 -= penetrationDepth * sin(angle);
+//                x4 -= penetrationDepth * cos(angle);
+//                y4 -= penetrationDepth * sin(angle);
+//
+//                x1 += velocityX;
+//                y1 += velocityY;
+//                x2 += velocityX;
+//                y2 += velocityY;
+//                x3 += velocityX;
+//                y3 += velocityY;
+//                x4 += velocityX;
+//                y4 += velocityY;
+//
+//                vector<Point> manh = {{x1, y1}, {x2, y2}, {x3, y3}, {x4, y4}};
+//                std::cerr << "                                        current angle: " << angle << "\n";
+//                angle = getAngle(manh);
+//                std::cerr << "                                        changing angleeeee to: " << angle << "\n";
+//            }
+//        }
+//    }
 };
 
 
 class Ball {
-    float weight;
     float mass;
     float velocityX;
     float velocityY;
@@ -1383,10 +1413,10 @@ class Ball {
     float accelerationY;
     float xPos;
     float yPos;
+    float radius;
 
-    Ball(float weight, float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos) :
-            weight(weight), mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos) {}
-
+    Ball(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, float radius) :
+         mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), radius(radius) {}
 };
 
 void testRender() {
@@ -1434,10 +1464,6 @@ void renderGround() {
     SDL_RenderFillRectF(renderer, &ground);
 }
 
-void initCar() {
-
-}
-
 
 int main(int argc, char* argv[]) {
     if (!initEverything()) {
@@ -1453,12 +1479,15 @@ int main(int argc, char* argv[]) {
 //        }
 
 
-    carB = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/spr_casualcar_0.png");
-//    Car car(100, 1000, 0, 0, 0, 0, WINDOW_WIDTH / 2, groundY, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0);
+    ballTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/soccer_ball.png");
+    carTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/spr_casualcar_0.png");
     vector<vector<Point>> tmp(2, vector<Point>(2));
-    Car car(100, 1000, 0, 0, 0, 0, WINDOW_WIDTH / 2 - 100 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100);
+    Car car(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 - 100 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100);
     car.initSize();
     car.yPos = groundY - car.height;
+
+
+//    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 10, 15);
 
     bool isRunning = true;
 
@@ -1508,13 +1537,13 @@ int main(int argc, char* argv[]) {
                     break;
                 case SDL_KEYDOWN:
                     if (event.key.keysym.sym == SDLK_BACKSLASH) {
-                        std::cerr << "HIT JUMPPPPPPP" << "\n";
+//                        std::cerr << "HIT JUMPPPPPPP" << "\n";
                         car.jump();
                         car.canJump = 0;
                         if (state[SDL_SCANCODE_DOWN]) {
                             car.dodgeUp();
                         }
-                        else if (state[SDL_SCANCODE_UP]) {
+                        if (state[SDL_SCANCODE_UP]) {
                             car.dodgeDown();
                         }
                     }
@@ -1600,6 +1629,8 @@ int main(int argc, char* argv[]) {
 //        SDL_RenderClear(renderer);
 
         car.handleGroundCollision();
+        std::cerr << "velocityX = " << car.velocityX << "\n";
+        std::cerr << "VelocityY = " << car.velocityY << "\n";
         car.moveCar();
 //
         car.draw(renderer);
@@ -1613,7 +1644,9 @@ int main(int argc, char* argv[]) {
 //            }
 //            std::cerr << "\n";
 //        }
-//        ClearScreen();
+//
+        ClearScreen();
+
         prvSign = curSign;
         prvDir = car.dir;
 
