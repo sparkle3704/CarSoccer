@@ -20,6 +20,7 @@ SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Surface* screenSurface = NULL;
 
+float maxSpeed = 0;
 bool prvDir = 0;
 void ClearScreen()
 {
@@ -114,6 +115,27 @@ void closeEverything() {
     SDL_Quit();
 }
 
+
+std::vector<int> calculateColor(double power, double maxPower) {
+//    power = min(power, maxPower);
+//    power = maxPower - power;
+    std::vector<int> color(3, 0); // Initialize color vector to 0
+
+    // Calculate the RGB values based on the power value and maxPower
+    double ratio = power / maxPower;
+    if (ratio <= 0.5) {
+        color[0] = 255;
+        color[1] = static_cast<int>(ratio * 2 * 255);
+    } else {
+        color[0] = static_cast<int>((1 - ratio) * 2 * 255);
+        color[1] = 255;
+    }
+    color[2] = 0;
+
+    return color; // Return the color vector
+}
+
+
 bool quit = false;
 SDL_Texture* carTexture = NULL;
 SDL_Texture* ballTexture = NULL;
@@ -122,18 +144,20 @@ SDL_Rect carRect;
 const float FRICTION = 0.1f;
 const float VELOCITY_X_FACTOR = 4;
 const float ROTATE_FACTOR = 2; // 3
-const float deltaTicks = 0.025;
+const float deltaTime = 0.025;
 
 const float GRAVITY_ACCELERATION = 5.0f;
 
 const float JUMP_VELOCITY = 7;
 const float JUMP_DRAG_ACCELERATION = 100;
 
-const float DODGE_SPIN_FACTOR = 15;
+
 const float MAX_BOOST_VELOCITY = 8;
 const float BOOST_ACCELERATION = 6;
 
-//const float DODGE_VELOCITY_X = 5;
+const float MAX_TRAIL_LENGTH = 60;
+
+const float DODGE_SPIN_FACTOR = 9;
 const float DODGE_VELOCITY = 7; // 7
 
 struct Point {
@@ -284,8 +308,8 @@ public:
     float velocityY;
     float accelerationX;
     float accelerationY;
-    float xPos; // centerX
-    float yPos; // centerY
+    float xPos;
+    float yPos;
     bool onGround;
     bool jumping;
     float angle;
@@ -314,6 +338,9 @@ public:
     float spinnedCounterClockWise = 0;
     float dodgeVelocityX = 0;
     float dodgeVelocityY = 0;
+
+    Point parallelBeforeDodgeA;
+    Point parallelBeforeDodgeB;
 //    vector<vector<Point>> corner{2, vector<Point>(2)};
 
     Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width) :
@@ -444,7 +471,7 @@ public:
         return ans;
     }
     void tiltDown() {
-        if (!spinningClockWise && !spinningCounterClockWise) {
+        if (spinningClockWise == 0 && spinningCounterClockWise == 0) {
             if (clockWise == 0) {
                 angle += binS(1.0);
 //                angle += ROTATE_FACTOR;
@@ -453,6 +480,9 @@ public:
                 angle -= binS(-1.0);
 //                angle -= ROTATE_FACTOR;
             }
+        }
+        else {
+            std::cerr << "Won't spin" << "\n";
         }
         correctAngle();
         correctPosition();
@@ -469,7 +499,7 @@ public:
     }
 
     void tiltUp() {
-        if (!spinningClockWise && !spinningCounterClockWise) {
+        if (spinningClockWise == 0 && spinningCounterClockWise == 0) {
             if (clockWise == 0) {
                 angle -= binS(-1.0);
 //                angle -= ROTATE_FACTOR;
@@ -478,6 +508,9 @@ public:
                 angle += binS(1.0);
 //                angle += ROTATE_FACTOR;
             }
+        }
+        else {
+            std::cerr << "Won't spin" << "\n";
         }
         correctAngle();
         correctPosition();
@@ -633,8 +666,8 @@ public:
                     boostVelocity = 0;
                 }
 //                boostVelocity = abs(goingVelocityX);
-//                sqrt((velocityX + accelerationX*deltaTicks)*(velocityX + accelerationX*deltaTicks) + (velocityY + accelerationY*deltaTicks)*(velocityY + accelerationY*deltaTicks))
-//                boostVelocity = sqrt((velocityX + accelerationX*deltaTicks)*(velocityX + accelerationX*deltaTicks) + (velocityY + accelerationY*deltaTicks)*(velocityY + accelerationY*deltaTicks)) - sign*BOOST_ACCELERATION*deltaTicks*2;
+//                sqrt((velocityX + accelerationX*deltaTime)*(velocityX + accelerationX*deltaTime) + (velocityY + accelerationY*deltaTime)*(velocityY + accelerationY*deltaTime))
+//                boostVelocity = sqrt((velocityX + accelerationX*deltaTime)*(velocityX + accelerationX*deltaTime) + (velocityY + accelerationY*deltaTime)*(velocityY + accelerationY*deltaTime)) - sign*BOOST_ACCELERATION*deltaTime*2;
                 gravityVelocityY = GRAVITY_ACCELERATION/5;
             }
             else {
@@ -646,7 +679,7 @@ public:
             if (prvSign == 1) {
                 if (velocityY == 0) {
                     if (goingVelocityX != 0) {
-                        boostVelocity -= sign*BOOST_ACCELERATION * deltaTicks;
+                        boostVelocity -= sign*BOOST_ACCELERATION * deltaTime;
                     }
                 }
             }
@@ -655,12 +688,25 @@ public:
             boostVelocity /= 5;
         }
 //        gravityVelocityY = 0;
-        boostVelocity += sign*BOOST_ACCELERATION * deltaTicks;
+
+        if (spinningClockWise || spinningCounterClockWise) {
+//            boostVelocity = 0;
+//            projected = findParallelVector(parallelBeforeDodgeA, parallelBeforeDodgeB, boostVelocity);
+        }
+        else {
+            boostVelocity += sign*BOOST_ACCELERATION * deltaTime;
+        }
+
+//        boostVelocity += sign*BOOST_ACCELERATION * deltaTime;
         boostVelocity = min(boostVelocity, MAX_BOOST_VELOCITY);
         boostVelocity = max(boostVelocity, 0.0f);
 
-
         Point projected = findParallelVector(tmp[1], tmp[0], boostVelocity);
+
+        if (spinningClockWise || spinningCounterClockWise) {
+            projected = findParallelVector(parallelBeforeDodgeA, parallelBeforeDodgeB, boostVelocity);
+        }
+
         boostVelocityX = projected.x;
         boostVelocityY = projected.y;
     }
@@ -767,39 +813,33 @@ public:
 //                goingVelocityX = 0;
             }
         }
+//        initialGravityAccelerationY = GRAVITY_ACCELERATION;
         if (spinningClockWise) {
-            if (spinnedClockWise == 360) {
+            if (spinnedClockWise >= 360) { // 360
                 spinningClockWise = 0;
                 spinnedClockWise = 0;
                 dodgeVelocityX = 0;
                 dodgeVelocityY = 0;
-                gravityVelocityY = 0;
-                initialGravityAccelerationY = GRAVITY_ACCELERATION;
+                std::cerr << "done clock" << "\n";
             }
             else {
-//                std::cerr << "SPINNING CLOCKWISE";
                 spinnedClockWise += DODGE_SPIN_FACTOR;
                 angle += DODGE_SPIN_FACTOR;
-                gravityVelocityY = 0;
-                initialGravityAccelerationY = 0;
                 jumpVelocityX = 0;
                 jumpVelocityY = 0;
             }
         }
         else if (spinningCounterClockWise) {
-            if (spinnedCounterClockWise == 360) {
+            if (spinnedCounterClockWise >= 360) {
                 spinningCounterClockWise = 0;
                 spinnedCounterClockWise = 0;
                 dodgeVelocityX = 0;
                 dodgeVelocityY = 0;
-                gravityVelocityY = 0;
-                initialGravityAccelerationY = GRAVITY_ACCELERATION;
+                std::cerr << "done counterclock" << "\n";
             }
             else {
                 spinnedCounterClockWise += DODGE_SPIN_FACTOR;
                 angle -= DODGE_SPIN_FACTOR;
-                gravityVelocityY = 0;
-                initialGravityAccelerationY = 0;
                 jumpVelocityX = 0;
                 jumpVelocityY = 0;
             }
@@ -817,31 +857,47 @@ public:
         accelerationX = initialJumpDragAccelerationX;
         accelerationY = initialGravityAccelerationY + initialJumpDragAccelerationY;
 
-        xPos += (velocityX + accelerationX * deltaTicks);
-        yPos += (velocityY + accelerationY * deltaTicks);
+        xPos += (velocityX + accelerationX * deltaTime);
+        yPos += (velocityY + accelerationY * deltaTime);
+
+//        if (abs(initialDodgeDragAccelerationX)*deltaTime > abs(dodgeVelocityX)) {
+//            dodgeVelocityX = 0;
+//            initialDodgeDragAccelerationX = 0;
+//        }
+//        else {
+//            dodgeVelocityX += initialDodgeDragAccelerationX * deltaTime;
+//        }
+//
+//        if (abs(initialDodgeDragAccelerationY)*deltaTime > abs(dodgeVelocityY)) {
+//            dodgeVelocityY = 0;
+//            initialDodgeDragAccelerationY = 0;
+//        }
+//        else {
+//            dodgeVelocityY += initialDodgeDragAccelerationY * deltaTime;
+//        }
         /// ///////////////////////////////////////////////////////
 //
 //        if (curSign == -1) {
 //            std::cerr << "stopping boost" << "\n";
-//            if (abs(initialBoostAccelerationX) * deltaTicks > abs(boostVelocityX)) {
+//            if (abs(initialBoostAccelerationX) * deltaTime > abs(boostVelocityX)) {
 //                boostVelocityX = 0;
 //                initialBoostAccelerationX = 0;
 //            }
 //            else {
-//                boostVelocityX += initialBoostAccelerationX * deltaTicks;
+//                boostVelocityX += initialBoostAccelerationX * deltaTime;
 //            }
 //
-//            if (abs(initialBoostAccelerationY) * deltaTicks > abs(boostVelocityY)) {
+//            if (abs(initialBoostAccelerationY) * deltaTime > abs(boostVelocityY)) {
 //                boostVelocityY = 0;
 //                initialBoostAccelerationY = 0;
 //            }
 //            else {
-//                boostVelocityY += initialBoostAccelerationY * deltaTicks;
+//                boostVelocityY += initialBoostAccelerationY * deltaTime;
 //            }
 //        }
 //        else {
-//            boostVelocityX += initialBoostAccelerationX * deltaTicks;
-//            boostVelocityY += initialBoostAccelerationY * deltaTicks;
+//            boostVelocityX += initialBoostAccelerationX * deltaTime;
+//            boostVelocityY += initialBoostAccelerationY * deltaTime;
 //        }
 
 //        std::cerr << "boostX = " << boostVelocityX << "\n";
@@ -851,7 +907,7 @@ public:
         if (jumpVelocityY != 0) {
             std::cerr << "JUMP VELOCITYX not 0++++++++" << "\n";
         }
-        if (abs(initialJumpDragAccelerationX) * deltaTicks > abs(jumpVelocityX)) {
+        if (abs(initialJumpDragAccelerationX) * deltaTime > abs(jumpVelocityX)) {
 //            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
 //            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
 //            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
@@ -861,10 +917,10 @@ public:
             initialJumpDragAccelerationX = 0;
         }
         else {
-            jumpVelocityX += initialJumpDragAccelerationX * deltaTicks;
+            jumpVelocityX += initialJumpDragAccelerationX * deltaTime;
         }
 
-        if (abs(initialJumpDragAccelerationY) * deltaTicks > abs(jumpVelocityY)) {
+        if (abs(initialJumpDragAccelerationY) * deltaTime > abs(jumpVelocityY)) {
 //            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
 //            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
 //            std::cerr << "resetting jump and drag accer Y to 0 ================" << " " << initialJumpDragAccelerationY << " " << jumpVelocityY << "\n";
@@ -873,12 +929,12 @@ public:
             initialJumpDragAccelerationY = 0;
         }
         else {
-            jumpVelocityY += initialJumpDragAccelerationY * deltaTicks;
+            jumpVelocityY += initialJumpDragAccelerationY * deltaTime;
         }
 
 
 
-//        if (abs(initialGravityAccelerationY) * deltaTicks > abs(gravityVelocityY)) {
+//        if (abs(initialGravityAccelerationY) * deltaTime > abs(gravityVelocityY)) {
 //            gravityVelocityY = 0;
 //            initialGravityAccelerationY = 0;
 //        }
@@ -886,7 +942,7 @@ public:
 //            gravityVelocityY +=
 //        }
 
-        gravityVelocityY += GRAVITY_ACCELERATION * deltaTicks;
+        gravityVelocityY += GRAVITY_ACCELERATION * deltaTime;
 
         carRect = {xPos, yPos, width, height};
         tmp = getCoords(carRect, angle);
@@ -934,9 +990,16 @@ public:
         float maxX = max({x1, x2, x3, x4});
         float maxY = max({y1, y2, y3, y4});
 
-        Point projected = findParallelVector(tmp[2], tmp[0], DODGE_VELOCITY);
+        ///
+        Point projected = findParallelVector(tmp[1], tmp[0], DODGE_VELOCITY);
         dodgeVelocityX = projected.x;
         dodgeVelocityY = projected.y;
+
+//        initialDodgeDragAccelerationX = -dodgeVelocityX;
+//        initialDodgeDragAccelerationY = -dodgeVelocityY;
+
+        parallelBeforeDodgeA = tmp[1];
+        parallelBeforeDodgeB = tmp[0];
     }
 
     void dodgeUp() {
@@ -960,10 +1023,17 @@ public:
         float minY = min({y1, y2, y3, y4});
         float maxX = max({x1, x2, x3, x4});
         float maxY = max({y1, y2, y3, y4});
-//
-        Point projected = findParallelVector(tmp[2], tmp[0], DODGE_VELOCITY);
+        ///
+        Point projected = findParallelVector(tmp[1], tmp[0], DODGE_VELOCITY);
+
         dodgeVelocityX = -projected.x;
         dodgeVelocityY = -projected.y;
+//
+//        initialDodgeDragAccelerationX = -dodgeVelocityX;
+//        initialDodgeDragAccelerationY = -dodgeVelocityY;
+
+        parallelBeforeDodgeA = tmp[1];
+        parallelBeforeDodgeB = tmp[0];
     }
 
     void initSize() {
@@ -973,7 +1043,9 @@ public:
         height = float(h) * scale;
     }
 
+    deque<SDL_FPoint> trailBuffer;
     void draw(SDL_Renderer* renderer) {
+        maxSpeed = max(maxSpeed, sqrt((velocityX*velocityX) + (velocityY*velocityY)));
         correctAngle();
         correctPosition();
 
@@ -990,6 +1062,7 @@ public:
         float maxY = max({y1, y2, y3, y4});
 
         vector<Point> projected = findPerpendicularVectors(tmp[1], tmp[0], JUMP_VELOCITY);
+
         //clockwise - counterclockwise
 
         Point projected_v1 = projected[0]; // clockwise
@@ -1024,6 +1097,23 @@ public:
         std::cerr << "xPos = " << xPos << ", " << "yPos = " << yPos << "\n";
 //        SDL_FPoint center = {width/2, height/2};
         SDL_FPoint center = { width/2, height/2 };
+
+        SDL_FPoint carCenterPos = {xPos + width/2, yPos + height/2};
+
+
+        SDL_FPoint trackedPoint = {(tmp[0].x + tmp[3].x)/2, (tmp[0].y + tmp[3].y)/2};
+        trailBuffer.push_front(trackedPoint);
+        if ((int)trailBuffer.size() > MAX_TRAIL_LENGTH) {
+            trailBuffer.pop_back();
+        }
+//        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+//        SDL_RenderClear(renderer);
+//        for (int i = 1; i < (int)trailBuffer.size(); ++i) {
+//            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+//            SDL_RenderDrawLine(renderer, trailBuffer[i-1].x, trailBuffer[i-1].y, trailBuffer[i].x, trailBuffer[i].y);
+////            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
+////            SDL_RenderPresent(renderer);
+//        }
         vector<Point> perpen = findPerpendicularVectors(tmp[1], tmp[0], JUMP_VELOCITY);
 //        std::cerr <<
 
@@ -1091,6 +1181,27 @@ public:
         std::cerr << (flip == SDL_FLIP_VERTICAL ? "vertical flipped" : "                      ") << "\n";
         std::cerr << "\n";
         SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
+
+        for (int i = 1; i < (int)trailBuffer.size(); ++i) {
+            float maxSpeed = 14.2;
+            float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
+            vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
+            SDL_SetRenderDrawColor(renderer, getRGB[0], getRGB[1], getRGB[2], 255);
+            SDL_RenderDrawLine(renderer, trailBuffer[i-1].x, trailBuffer[i-1].y, trailBuffer[i].x, trailBuffer[i].y);
+//            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
+//            SDL_RenderPresent(renderer);
+        }
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        SDL_RenderDrawLineF(renderer, tmp[1].x, tmp[1].y, tmp[0].x, tmp[0].y);
+
+//        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+//        SDL_RenderDrawPointF(renderer, tmp[0].x, tmp[0].y);
+
+        SDL_Texture* tmpTexture = NULL;
+        tmpTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/66598-ball.png");
+        SDL_FRect tmpRect = {tmp[0].x - 12/2, tmp[0].y - 12/2, 12, 12};
+        SDL_FPoint tmpCenter = {12, 12};
+        SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
     }
 
     void jump() {
@@ -1161,7 +1272,7 @@ public:
 
             gravityVelocityY = 0;
             initialGravityAccelerationY = GRAVITY_ACCELERATION;
-//            jumpDragVelocityX += initialJumpDragAccelerationY * deltaTicks;
+//            jumpDragVelocityX += initialJumpDragAccelerationY * deltaTime;
 //            jumpDragVelocityY = 0;
 //            velocityX += initialJumpVelocityX;
 //            velocityY += deltaVy;
@@ -1406,6 +1517,7 @@ public:
 
 
 class Ball {
+public:
     float mass;
     float velocityX;
     float velocityY;
@@ -1414,9 +1526,32 @@ class Ball {
     float xPos;
     float yPos;
     float radius;
+    float angle = 0;
 
     Ball(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, float radius) :
          mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), radius(radius) {}
+
+
+    void draw(SDL_Renderer* renderer) {
+//        correctAngle();
+//        correctPosition();
+        SDL_FPoint center = {radius, radius};
+
+        SDL_FRect ballRect = {xPos, yPos, radius*2, radius*2};
+        vector<Point> tmp = getCoords(ballRect, angle);
+        float x1 = tmp[0].x, y1 = tmp[0].y;
+        float x2 = tmp[1].x, y2 = tmp[1].y;
+        float x3 = tmp[2].x, y3 = tmp[2].y;
+        float x4 = tmp[3].x, y4 = tmp[3].y;
+
+        float minX = min({x1, x2, x3, x4});
+        float minY = min({y1, y2, y3, y4});
+        float maxX = max({x1, x2, x3, x4});
+        float maxY = max({y1, y2, y3, y4});
+
+        SDL_RenderCopyExF(renderer, ballTexture, NULL, &ballRect, angle, &center, SDL_FLIP_NONE);
+    }
+
 };
 
 void testRender() {
@@ -1487,7 +1622,7 @@ int main(int argc, char* argv[]) {
     car.yPos = groundY - car.height;
 
 
-//    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 10, 15);
+    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 2*25, 25);
 
     bool isRunning = true;
 
@@ -1541,6 +1676,7 @@ int main(int argc, char* argv[]) {
                         car.jump();
                         car.canJump = 0;
                         if (state[SDL_SCANCODE_DOWN]) {
+
                             car.dodgeUp();
                         }
                         if (state[SDL_SCANCODE_UP]) {
@@ -1634,7 +1770,12 @@ int main(int argc, char* argv[]) {
         car.moveCar();
 //
         car.draw(renderer);
+//        ball.draw(renderer);
         SDL_RenderPresent(renderer);
+//
+        std::cerr << "maxSpeed = " << maxSpeed << "\n";
+
+
 //        SDL_Delay(200);
 //        ClearScreen();
 //        bool gg = 1;
@@ -1645,7 +1786,7 @@ int main(int argc, char* argv[]) {
 //            std::cerr << "\n";
 //        }
 //
-        ClearScreen();
+//        ClearScreen();
 
         prvSign = curSign;
         prvDir = car.dir;
