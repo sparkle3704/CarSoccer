@@ -21,7 +21,100 @@ SDL_Renderer* renderer = NULL;
 SDL_Surface* screenSurface = NULL;
 
 float maxSpeed = 0;
+
+struct vec2 {
+    float x;
+    float y;
+
+    vec2(float x = 0, float y = 0) : x(x), y(y) {}
+    vec2 operator+(const vec2 &v) const {
+        return {x + v.x, y + v.y};
+    }
+
+    vec2 operator-(const vec2 &v) const {
+        return {x - v.x, y - v.y};
+    }
+
+    vec2 operator*(const float s) const {
+        return {x * s, y * s};
+    }
+
+    float dot(const vec2 &v) const {
+        return x * v.x + y * v.y;
+    }
+
+    float length() const {
+        return sqrtf(dot(*this));
+    }
+
+    vec2 normalized() const {
+        if (length() != 0) {
+            return *this * (1.0f / length());
+        }
+        return {0.0f, 0.0f};
+    }
+
+    vec2 perpendicular() const {
+        return {-y, x};
+    }
+};
+
+struct sphere {
+    vec2 center;
+    float radius;
+};
+
+struct obb {
+    vec2 center;
+    float halfWidth;
+    float halfHeight;
+    float angle;
+
+    obb(vec2 center, float halfWidth, float halfHeight, float angle) : center(center), halfWidth(halfWidth), halfHeight(halfHeight), angle(angle) {}
+};
+
+vec2 rotateVec2(const vec2& v, float angle) {
+    float s = sin(angle);
+    float c = cos(angle);
+    return vec2{v.x * c - v.y * s, v.x * s + v.y * c};
+}
+
+vec2 nearestPointOnOBB(const obb a, const vec2 b) {
+    vec2 closest = b - a.center;
+
+    float angle = -a.angle;
+    float s = sin(angle);
+    float c = cos(angle);
+
+    vec2 rotated(closest.x * c - closest.y * s, closest.x * s + closest.y * c);
+
+    vec2 clamped(rotated.x, rotated.y);
+    clamped.x = max(clamped.x, -a.halfWidth);
+    clamped.x = min(clamped.x, a.halfWidth);
+    clamped.y = max(clamped.y, -a.halfHeight);
+    clamped.y = min(clamped.y, a.halfHeight);
+
+    vec2 unrotated(clamped.x * c + clamped.y * s, -clamped.x * s + clamped.y * c);
+
+    return a.center + unrotated;
+}
+
+
+vec2 U, V;
+int RRRR, GGGG, BBBB;
 bool prvDir = 0;
+
+void drawLine(vec2 u, vec2 v, int r, int g, int b) {
+    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    SDL_RenderDrawLine(renderer, u.x, u.y, v.x, v.y);
+
+    U = u;
+    V = v;
+    RRRR = r;
+    GGGG = g;
+    BBBB = b;
+}
+
 void ClearScreen()
 {
 COORD cursorPosition;	cursorPosition.X = 0;	cursorPosition.Y = 0;	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursorPosition);
@@ -146,7 +239,7 @@ const float VELOCITY_X_FACTOR = 4;
 const float ROTATE_FACTOR = 2; // 3
 const float deltaTime = 0.025;
 
-const float GRAVITY_ACCELERATION = 5.0f;
+const float GRAVITY_ACCELERATION = 5.0f; // 5.0f;
 
 const float JUMP_VELOCITY = 7;
 const float JUMP_DRAG_ACCELERATION = 100;
@@ -269,6 +362,7 @@ std::vector<Point> getCoords(SDL_FRect rect, float angle_degrees) {
     return coords;
 }
 
+
 float getAngle(const std::vector<Point>& points) {
     // Compute the center of the rectangle
     float cx = 0.0f;
@@ -303,7 +397,7 @@ float getAngle(const std::vector<Point>& points) {
 
 class Car {
 public:
-    float mass;
+    float mass = 200;
     float velocityX;
     float velocityY;
     float accelerationX;
@@ -341,6 +435,12 @@ public:
 
     Point parallelBeforeDodgeA;
     Point parallelBeforeDodgeB;
+
+    float carBallCollisionVelocityX = 0;
+    float carBallCollisionVelocityY = 0;
+    float carBallCollisionDragAccelerationX = 0;
+    float carBallCollisionDragAccelerationY = 0;
+
 //    vector<vector<Point>> corner{2, vector<Point>(2)};
 
     Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width) :
@@ -360,7 +460,7 @@ public:
         float maxX = max({x1, x2, x3, x4});
         float maxY = max({y1, y2, y3, y4});
 
-        std::cerr << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
+//        std::cerr << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
         if (maxX >= WINDOW_WIDTH) {
 //            std::cerr << "Hit right wall!" << "maxX = " << maxX << ", " << "WINDOW_WIDTH = " << WINDOW_WIDTH << "\n";
             return 1;
@@ -482,7 +582,7 @@ public:
             }
         }
         else {
-            std::cerr << "Won't spin" << "\n";
+//            std::cerr << "Won't spin" << "\n";
         }
         correctAngle();
         correctPosition();
@@ -510,7 +610,7 @@ public:
             }
         }
         else {
-            std::cerr << "Won't spin" << "\n";
+//            std::cerr << "Won't spin" << "\n";
         }
         correctAngle();
         correctPosition();
@@ -806,10 +906,10 @@ public:
 //        }
         if (curSign == 1) {
             if (prvSign == 1) {
-                std::cerr << "====================" << "\n";
-                std::cerr << "====================" << "\n";
-                std::cerr << "====================" << "\n";
-                std::cerr << "====================" << "\n";
+//                std::cerr << "====================" << "\n";
+//                std::cerr << "====================" << "\n";
+//                std::cerr << "====================" << "\n";
+//                std::cerr << "====================" << "\n";
 //                goingVelocityX = 0;
             }
         }
@@ -820,7 +920,7 @@ public:
                 spinnedClockWise = 0;
                 dodgeVelocityX = 0;
                 dodgeVelocityY = 0;
-                std::cerr << "done clock" << "\n";
+//                std::cerr << "done clock" << "\n";
             }
             else {
                 spinnedClockWise += DODGE_SPIN_FACTOR;
@@ -835,7 +935,7 @@ public:
                 spinnedCounterClockWise = 0;
                 dodgeVelocityX = 0;
                 dodgeVelocityY = 0;
-                std::cerr << "done counterclock" << "\n";
+//                std::cerr << "done counterclock" << "\n";
             }
             else {
                 spinnedCounterClockWise += DODGE_SPIN_FACTOR;
@@ -845,17 +945,17 @@ public:
             }
         }
         correctPosition();
-        std::cerr << "DODGE VELOCITY X = " << dodgeVelocityX << "\n";
-        std::cerr << "DODGE VELOCITY Y = " << dodgeVelocityY << "\n";
+//        std::cerr << "DODGE VELOCITY X = " << dodgeVelocityX << "\n";
+//        std::cerr << "DODGE VELOCITY Y = " << dodgeVelocityY << "\n";
 //        boostVelocity = min(boostVelocity, MAX_BOOST_VELOCITY);
 //        boostVelocity = max(boostVelocity, 0.0f);
 
         /// ///////////////////////////////////////////////////////
-        velocityX = goingVelocityX + jumpVelocityX + boostVelocityX + dodgeVelocityX;
-        velocityY =  gravityVelocityY + jumpVelocityY + boostVelocityY + dodgeVelocityY;
+        velocityX = goingVelocityX + jumpVelocityX + boostVelocityX + dodgeVelocityX + carBallCollisionVelocityX;
+        velocityY =  gravityVelocityY + jumpVelocityY + boostVelocityY + dodgeVelocityY + carBallCollisionVelocityY;
 
-        accelerationX = initialJumpDragAccelerationX;
-        accelerationY = initialGravityAccelerationY + initialJumpDragAccelerationY;
+        accelerationX = initialJumpDragAccelerationX + carBallCollisionDragAccelerationX;
+        accelerationY = initialGravityAccelerationY + initialJumpDragAccelerationY + carBallCollisionDragAccelerationY;
 
         xPos += (velocityX + accelerationX * deltaTime);
         yPos += (velocityY + accelerationY * deltaTime);
@@ -875,6 +975,21 @@ public:
 //        else {
 //            dodgeVelocityY += initialDodgeDragAccelerationY * deltaTime;
 //        }
+        if (abs(carBallCollisionDragAccelerationX)*deltaTime > abs(carBallCollisionVelocityX)) {
+            carBallCollisionDragAccelerationX = 0;
+            carBallCollisionVelocityX = 0;
+        }
+        else {
+            carBallCollisionVelocityX += carBallCollisionDragAccelerationX * deltaTime;
+        }
+
+        if (abs(carBallCollisionDragAccelerationY)*deltaTime > abs(carBallCollisionVelocityY)) {
+            carBallCollisionDragAccelerationY = 0;
+            carBallCollisionVelocityY = 0;
+        }
+        else {
+            carBallCollisionVelocityY += carBallCollisionDragAccelerationY * deltaTime;
+        }
         /// ///////////////////////////////////////////////////////
 //
 //        if (curSign == -1) {
@@ -905,7 +1020,7 @@ public:
 //        std::cerr << "jump velocity X = " << jumpVelocityX << ", " << "dragX = " << initialJumpDragAccelerationX << "\n";
 //        std::cerr << "jump velocity Y = " << jumpVelocityY << ", " << "dragX = " << initialJumpDragAccelerationY << "\n";
         if (jumpVelocityY != 0) {
-            std::cerr << "JUMP VELOCITYX not 0++++++++" << "\n";
+//            std::cerr << "JUMP VELOCITYX not 0++++++++" << "\n";
         }
         if (abs(initialJumpDragAccelerationX) * deltaTime > abs(jumpVelocityX)) {
 //            std::cerr << "resetting jump and drag accer X to 0 ================" << " " << initialJumpDragAccelerationX << " " << jumpVelocityX << "\n";
@@ -1094,7 +1209,7 @@ public:
 //        std::cerr << "\n";
 //        std::cerr << "car width = " << width << ", " << "car height = " << height << "\n";
 //        std::cerr << "======" << "\n";
-        std::cerr << "xPos = " << xPos << ", " << "yPos = " << yPos << "\n";
+//        std::cerr << "xPos = " << xPos << ", " << "yPos = " << yPos << "\n";
 //        SDL_FPoint center = {width/2, height/2};
         SDL_FPoint center = { width/2, height/2 };
 
@@ -1133,7 +1248,7 @@ public:
 //        }
 //        std::cerr << "----------------" << "\n";
 //        std::cerr << angle << "\n";
-        std::cerr << "correct angle = " << angle << "\n";
+//        std::cerr << "correct angle = " << angle << "\n";
         bool testThis = 0;
         if (testThis) {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -1169,17 +1284,17 @@ public:
 //        std::cerr << "\n";
 
 //        std::cerr << xPos << " " << yPos << "\n";
-        std::cerr << "******************" << "\n";
-        for (int i = 0; i < 4; ++i) {
-            std::cerr << "[" << tmp[i].x << ",  " << tmp[i].y << "]" << "\n";
-        }
-        std::cerr << "******************" << "\n";
-        std::cerr << "angle = " << angle << "\n";
-        std::cerr << (clockWise ? "clockwise      " : "not CLockwise") << "\n";
-        std::cerr << "dir = " << dir << ", " << (dir ? "going right" : "going left  ") << "\n";
-        std::cerr << "pointing = " << pointing << ", " << (pointing ? "pointing right" : "pointing left  ") << "\n";
-        std::cerr << (flip == SDL_FLIP_VERTICAL ? "vertical flipped" : "                      ") << "\n";
-        std::cerr << "\n";
+//        std::cerr << "******************" << "\n";
+//        for (int i = 0; i < 4; ++i) {
+//            std::cerr << "[" << tmp[i].x << ",  " << tmp[i].y << "]" << "\n";
+//        }
+//        std::cerr << "******************" << "\n";
+//        std::cerr << "angle = " << angle << "\n";
+//        std::cerr << (clockWise ? "clockwise      " : "not CLockwise") << "\n";
+//        std::cerr << "dir = " << dir << ", " << (dir ? "going right" : "going left  ") << "\n";
+//        std::cerr << "pointing = " << pointing << ", " << (pointing ? "pointing right" : "pointing left  ") << "\n";
+//        std::cerr << (flip == SDL_FLIP_VERTICAL ? "vertical flipped" : "                      ") << "\n";
+//        std::cerr << "\n";
         SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
 
         for (int i = 1; i < (int)trailBuffer.size(); ++i) {
@@ -1202,6 +1317,8 @@ public:
         SDL_FRect tmpRect = {tmp[0].x - 12/2, tmp[0].y - 12/2, 12, 12};
         SDL_FPoint tmpCenter = {12, 12};
         SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
+
+        drawLine(U, V, RRRR, GGGG, BBBB);
     }
 
     void jump() {
@@ -1215,7 +1332,7 @@ public:
 //            Uint32 startJumpTime = SDL_GetTicks();
 
             correctPosition();
-            std::cerr << "jumping!" << "\n";
+//            std::cerr << "jumping!" << "\n";
 //            velocityY -= 9;
             onGround = false;
             jumping = true;
@@ -1515,18 +1632,26 @@ public:
 //    }
 };
 
-
+const float RESTITUTION = 0.5;
 class Ball {
 public:
-    float mass;
-    float velocityX;
-    float velocityY;
-    float accelerationX;
-    float accelerationY;
+    float mass = 50;
+    float velocityX = 0;
+    float velocityY = 0;
+    float accelerationX = 0;
+    float accelerationY = 0;
     float xPos;
     float yPos;
     float radius;
     float angle = 0;
+    float restitution = 0.9;
+    float carBallCollisionVelocityX = 0;
+    float carBallCollisionVelocityY = 0;
+    float carBallCollisionDragAccelerationX = 0;
+    float carBallCollisionDragAccelerationY = 0;
+    float gravityVelocityY = 0;
+    float initialGravityAccelerationY = GRAVITY_ACCELERATION;
+    const float dampening = 0.99;
 
     Ball(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, float radius) :
          mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), radius(radius) {}
@@ -1552,7 +1677,314 @@ public:
         SDL_RenderCopyExF(renderer, ballTexture, NULL, &ballRect, angle, &center, SDL_FLIP_NONE);
     }
 
+    float gravityAcc = 0;
+    void moveBall() {
+//        velocityX = carBallCollisionVelocityX;
+//        velocityY = carBallCollisionVelocityY;
+//
+//        accelerationX = carBallCollisionDragAccelerationX;
+//        accelerationY = carBallCollisionDragAccelerationY;
+//
+//        vec2 ballCenter = vec2(xPos + radius, yPos + radius);
+//        initialGravityAccelerationY = GRAVITY_ACCELERATION;
+//        restitution = 1;
+//        if (xPos < 0) {
+//            restitution = RESTITUTION;
+//            xPos = 0;
+//        }
+//        if (xPos + 2*radius > WINDOW_WIDTH) {
+//            restitution = -RESTITUTION;
+//            xPos = WINDOW_WIDTH - 2*radius;
+//        }
+//        if (yPos < 0) {
+//            restitution = RESTITUTION;
+//            yPos = 0;
+//        }
+//        if (yPos + 2*radius > groundY) {
+//            restitution = -RESTITUTION;
+//            yPos = groundY - 2*radius;
+//            gravityVelocityY = 0;
+//            std::cerr << "ball dropped onto the ground" << "\n";
+////            initialGravityAccelerationY = 0;
+//        }
+////        if (velocityY == 0 && yPos + 2*radius >= groundY) {;
+////            gravityVelocityY = 0;
+////            initialGravityAccelerationY = 0;
+////        }
+////        else {
+////            gravityVelocityY += initialGravityAccelerationY*deltaTime;
+////        }
+//        gravityAcc += GRAVITY_ACCELERATION*deltaTime;
+//
+//        gravityVelocityY += gravityAcc;
+//        velocityY += gravityVelocityY;
+//
+//        if (yPos + 2*radius >= groundY) {
+//            gravityVelocityY = 0;
+//            gravityAcc = 0;
+//        }
+//
+//        xPos += (velocityX + accelerationX * deltaTime) * restitution;
+//        yPos += (velocityY + accelerationY * deltaTime) * restitution + gravityVelocityY;
+
+//        restitution = 1;
+//        if (xPos < 0) {
+//            restitution = RESTITUTION;
+//            xPos = 0;
+//        }
+//        if (xPos + 2*radius > WINDOW_WIDTH) {
+//            restitution = -RESTITUTION;
+//            xPos = WINDOW_WIDTH - 2*radius;
+//        }
+//        if (yPos < 0) {
+//            restitution = RESTITUTION;
+//            yPos = 0;
+//        }
+//        if (yPos + 2*radius > groundY) {
+//            restitution = -RESTITUTION;
+//            yPos = groundY - 2*radius;
+//            gravityVelocityY = 0;
+//            std::cerr << "ball dropped onto the ground" << "\n";
+//        }
+//        velocityX *= restitution;
+//        velocityY *= restitution;
+
+//        velocityX += carBallCollisionVelocityX;
+//        velocityY += carBallCollisionVelocityY;
+
+        accelerationX = carBallCollisionDragAccelerationX*0;
+        accelerationY = carBallCollisionDragAccelerationY*0 + initialGravityAccelerationY;
+
+        xPos += (velocityX + accelerationX * deltaTime);
+        yPos += (velocityY + accelerationY * deltaTime);
+
+        velocityX += accelerationX*deltaTime;
+        velocityY += GRAVITY_ACCELERATION*deltaTime;
+        velocityX *= dampening;
+        velocityY *= dampening;
+        if (xPos < 0) {
+            restitution = RESTITUTION;
+            xPos = 0;
+            velocityX *= -RESTITUTION;
+        }
+        if (xPos + 2*radius > WINDOW_WIDTH) {
+            restitution = -RESTITUTION;
+            xPos = WINDOW_WIDTH - 2*radius;
+            velocityX *= -RESTITUTION;
+        }
+        if (yPos < 0) {
+            restitution = RESTITUTION;
+            yPos = 0;
+            velocityY *= -RESTITUTION;
+        }
+
+        if (yPos + 2*radius > groundY) {
+            velocityY *= -RESTITUTION*2;
+            restitution = -RESTITUTION;
+            yPos = groundY - 2*radius;
+//            gravityVelocityY = 0;
+//            std::cerr << "ball dropped onto the ground" << "\n";
+        }
+    }
+
 };
+
+bool intersectCarBall(const obb a, const sphere b, vec2& collision_normal, vec2& p) {
+    p = nearestPointOnOBB(a, b.center);
+    vec2 v = p - b.center;
+    if (v.length() <= b.radius) {
+        drawLine(p, b.center, 0, 128, 0);
+        collision_normal = v.normalized();
+        return 1;
+    }
+    else {
+        drawLine(p, b.center, 255, 0, 0);
+        return 0;
+    }
+}
+
+//vec2 nearestPointOnOBB(Car car, const vec2 point) {
+//    SDL_FRect carRect = {car.xPos, car.yPos, car.width, car.height};
+//    vector<Point> tmp = getCoords(carRect, car.angle);
+//    float x1 = tmp[0].x, y1 = tmp[0].y;
+//    float x2 = tmp[1].x, y2 = tmp[1].y;
+//    float x3 = tmp[2].x, y3 = tmp[2].y;
+//    float x4 = tmp[3].x, y4 = tmp[3].y;
+//
+//    float minX = min({x1, x2, x3, x4});
+//    float minY = min({y1, y2, y3, y4});
+//    float maxX = max({x1, x2, x3, x4});
+//    float maxY = max({y1, y2, y3, y4});
+//
+//    float centerX = (x1 + x2 + x3 + x4) / 4.0f;
+//    float centerY = (y1 + y2 + y3 + y4) / 4.0f;
+//
+//    vec2 center = (centerX, centerY);
+//    float angle = car.angle;
+//    float width = car.width;
+//    float height = car.height;
+//
+//
+//
+//    // Step 1: Calculate the local coordinate system (u, v) using the OBB's angle.
+//    vec2 u(cos(angle), sin(angle));
+//    vec2 v(-sin(angle), cos(angle));
+//
+//    // Step 2: Calculate the point's coordinates relative to the OBB's center in the local coordinate system.
+//    vec2 localPoint = point - center;
+//    vec2 relativePoint(dot(localPoint, u), dot(localPoint, v));
+//
+//    // Step 3: Project the relative point onto the u and v axes to find its coordinates in the OBB's local space.
+//    vec2 localProjection(clamp(relativePoint.x, -width / 2.0f, width / 2.0f),
+//                         clamp(relativePoint.y, -height / 2.0f, height / 2.0f));
+//
+//    // Step 4: Clamp the projected coordinates to the OBB's half-width and half-height to get the point's local coordinates on the OBB's edge.
+//    vec2 clampedLocalPoint = localProjection - relativePoint;
+//
+//    // Step 5: Transform the local point back into world space by applying the OBB's angle and center position.
+//    vec2 worldPoint = center + dot(clampedLocalPoint, vec2(u.x, v.x), vec2(u.y, v.y));
+//
+//    return worldPoint;
+//}
+
+obb carToObb(Car car) {
+    SDL_FRect carRect = {car.xPos, car.yPos, car.width, car.height};
+    vector<Point> tmp = getCoords(carRect, car.angle);
+    float x1 = tmp[0].x, y1 = tmp[0].y;
+    float x2 = tmp[1].x, y2 = tmp[1].y;
+    float x3 = tmp[2].x, y3 = tmp[2].y;
+    float x4 = tmp[3].x, y4 = tmp[3].y;
+
+    float minX = min({x1, x2, x3, x4});
+    float minY = min({y1, y2, y3, y4});
+    float maxX = max({x1, x2, x3, x4});
+    float maxY = max({y1, y2, y3, y4});
+
+    float center_x = (x1 + x2 + x3 + x4) / 4.0f;
+    float center_y = (y1 + y2 + y3 + y4) / 4.0f;
+
+    float theta = car.angle * M_PI / 180.0f;
+
+    float half_width = car.width / 2.0f;
+    float half_height = car.height / 2.0f;
+
+    obb result((0, 0), 0, 0, 0);
+    result.center.x = center_x;
+    result.center.y = center_y;
+    result.halfWidth = half_width;
+    result.halfHeight = half_height;
+    result.angle = theta;
+
+    drawLine(vec2(x1, y1), vec2(x2, y2), 0, 255, 0);
+    drawLine(vec2(x2, y2), vec2(x3, y3), 0, 255, 0);
+    drawLine(vec2(x3, y3), vec2(x4, y4), 0, 255, 0);
+    drawLine(vec2(x4, y4), vec2(x1, y1), 0, 255, 0);
+
+    return result;
+}
+
+sphere ballToSphere(Ball ball) {
+    sphere ball_sphere;
+    ball_sphere.center = vec2{ball.xPos + ball.radius, ball.yPos + ball.radius};
+    ball_sphere.radius = ball.radius;
+    return ball_sphere;
+}
+
+float distance(vec2 a, vec2 b) {
+    return (a - b).length();
+}
+
+void handleCollisionCarBall(Car& car, Ball& ball) {
+    SDL_FRect carRect = {car.xPos, car.yPos, car.width, car.height};
+    vector<Point> tmp = getCoords(carRect, car.angle);
+    float x1 = tmp[0].x, y1 = tmp[0].y;
+    float x2 = tmp[1].x, y2 = tmp[1].y;
+    float x3 = tmp[2].x, y3 = tmp[2].y;
+    float x4 = tmp[3].x, y4 = tmp[3].y;
+
+    float minX = min({x1, x2, x3, x4});
+    float minY = min({y1, y2, y3, y4});
+    float maxX = max({x1, x2, x3, x4});
+    float maxY = max({y1, y2, y3, y4});
+
+    float center_x = (x1 + x2 + x3 + x4) / 4.0f;
+    float center_y = (y1 + y2 + y3 + y4) / 4.0f;
+
+    obb car_obb = carToObb(car);
+
+    sphere ball_sphere = ballToSphere(ball);
+
+    vec2 collision_normal;
+    vec2 p;
+    if (intersectCarBall(car_obb, ball_sphere, collision_normal, p)) {
+        std::cerr << "car and ball intersect" << "\n";
+//        float carCenterX = car.xPos + (car.width / 2.0f) * cos(car.angle) - (car.height / 2.0f) * sin(car.angle);
+//        float carCenterY = car.yPos + (car.height / 2.0f) * cos(car.angle) + (car.width / 2.0f) * sin(car.angle);
+//
+        float carCenterX = center_x;
+        float carCenterY = center_y;
+
+        // Calculate the vector from the point of contact to the center of the ball
+        vec2 contactPoint = nearestPointOnOBB(car_obb, ball_sphere.center);
+//        vec2 normalizedContactVector = (vec2(carCenterX, carCenterY) - contactPoint).normalized(); //
+        vec2 normalizedContactVector = (ball_sphere.center - contactPoint).normalized(); //
+//        vec2 normalizedContactVector = (contactPoint - ball_sphere.center).normalized(); //
+
+//        vec2 curVelocity = {car.velocityX, car.velocityY};
+//
+//        vec2 newVelocity = curVelocity - normalizedContactVector*2*(curVelocity.dot(normalizedContactVector));
+//
+//        car.carBallCollisionVelocityX = -0.8f * newVelocity.x;
+//        car.carBallCollisionVelocityY = -0.8f * newVelocity.y;
+//
+//        car.carBallCollisionDragAccelerationX = -0.1f * car.carBallCollisionVelocityX;
+//        car.carBallCollisionDragAccelerationY = -0.1f * car.carBallCollisionVelocityY;
+
+
+//        car.velocityX = newVelocity[0];
+//        car.velocityY = newVelocity[1];
+
+
+//        xPos += normal.x * (ball_sphere.radius - norm(ball_sphere.center - point_of_contact));
+//        yPos += normal.y * (ball_sphere.radius - norm(ball_sphere.center - point_of_contact));
+
+            vec2 ballVelocity = vec2(ball.velocityX, ball.velocityY);
+            vec2 carVelocity = vec2(car.velocityX, car.velocityY);
+            vec2 relativeVelocity = ballVelocity - carVelocity;
+
+            float relativeSpeed = relativeVelocity.dot(normalizedContactVector);
+
+        if (relativeSpeed < 0.0f) {
+            float impulseMagnitude = (-(1.0f + ball.restitution) * relativeSpeed) / ((1.0f / ball.mass) + (1.0f / car.mass));
+
+            /// BALL
+            vec2 ballImpulse = normalizedContactVector * impulseMagnitude * 0.2;
+//            ball.carBallCollisionVelocityX = ballImpulse.x;
+//            ball.carBallCollisionVelocityY = ballImpulse.y;//
+            ball.velocityX = ballImpulse.x;
+            ball.velocityY = ballImpulse.y;
+
+            // Update the ball's position to avoid overlap
+//            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
+//            vec2 newBallPosition = vec2(ball.xPos, ball.yPos) - separation;
+//            ball.xPos = newBallPosition.x;
+//            ball.yPos = newBallPosition.y;
+
+            /// CAR - no impact
+            // Apply the impulse to the car
+//            vec2 carImpulse = ballImpulse*(-(1.0f / car.mass));
+//            car.carBallCollisionVelocityX = carImpulse.x;
+//            car.carBallCollisionVelocityY = carImpulse.y;
+//            car.velocityX = carImpulse.x;
+//            car.velocityY = carImpulse.y;
+        }
+            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
+            vec2 newBallPosition = vec2(ball.xPos, ball.yPos) - separation;
+            ball.xPos = newBallPosition.x;
+            ball.yPos = newBallPosition.y;
+    }
+}
+
 
 void testRender() {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -1606,7 +2038,7 @@ int main(int argc, char* argv[]) {
     }
 //    return 0;
 //
-    std::cerr << "groundY = " << groundY << "\n";
+//    std::cerr << "groundY = " << groundY << "\n";
 //    SDL_FRect tmp_rect = {WINDOW_WIDTH/2, WINDOW_HEIGHT/2, 50, 25};
 //    vector<Point> tmp_coord = getCoords(tmp_rect, 0);
 //        for (int i = 0; i < 4; ++i) {
@@ -1622,7 +2054,8 @@ int main(int argc, char* argv[]) {
     car.yPos = groundY - car.height;
 
 
-    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 2*25, 25);
+//    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 2*25, 25);
+    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, WINDOW_HEIGHT/3, 25);
 
     bool isRunning = true;
 
@@ -1759,21 +2192,23 @@ int main(int argc, char* argv[]) {
         renderGround();
 
 //        SDL_RenderClear(renderer);
-        std::cerr << car.angle << "\n";
+//        std::cerr << car.angle << "\n";
         car.applyGravity();
 
 //        SDL_RenderClear(renderer);
 
         car.handleGroundCollision();
-        std::cerr << "velocityX = " << car.velocityX << "\n";
-        std::cerr << "VelocityY = " << car.velocityY << "\n";
+//        std::cerr << "velocityX = " << car.velocityX << "\n";
+//        std::cerr << "VelocityY = " << car.velocityY << "\n";
         car.moveCar();
+        ball.moveBall();
 //
+        handleCollisionCarBall(car, ball);
         car.draw(renderer);
-//        ball.draw(renderer);
+        ball.draw(renderer);
         SDL_RenderPresent(renderer);
 //
-        std::cerr << "maxSpeed = " << maxSpeed << "\n";
+//        std::cerr << "maxSpeed = " << maxSpeed << "\n";
 
 
 //        SDL_Delay(200);
