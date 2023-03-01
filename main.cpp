@@ -1658,6 +1658,7 @@ public:
 
 
     void draw(SDL_Renderer* renderer) {
+        std::cerr << "velocityX = " << velocityX << ", " << "velocityY = " << velocityY << "\n";
 //        correctAngle();
 //        correctPosition();
         SDL_FPoint center = {radius, radius};
@@ -1917,7 +1918,7 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
     vec2 collision_normal;
     vec2 p;
     if (intersectCarBall(car_obb, ball_sphere, collision_normal, p)) {
-        std::cerr << "car and ball intersect" << "\n";
+//        std::cerr << "car and ball intersect" << "\n";
 //        float carCenterX = car.xPos + (car.width / 2.0f) * cos(car.angle) - (car.height / 2.0f) * sin(car.angle);
 //        float carCenterY = car.yPos + (car.height / 2.0f) * cos(car.angle) + (car.width / 2.0f) * sin(car.angle);
 //
@@ -1955,14 +1956,27 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
             float relativeSpeed = relativeVelocity.dot(normalizedContactVector);
 
         if (relativeSpeed < 0.0f) {
-            float impulseMagnitude = (-(1.0f + ball.restitution) * relativeSpeed) / ((1.0f / ball.mass) + (1.0f / car.mass));
+//            float impulseMagnitude = (-(1.0f + ball.restitution) * relativeSpeed) / ((1.0f / ball.mass) + (1.0f / car.mass));
 
             /// BALL
-            vec2 ballImpulse = normalizedContactVector * impulseMagnitude * 0.2;
-//            ball.carBallCollisionVelocityX = ballImpulse.x;
-//            ball.carBallCollisionVelocityY = ballImpulse.y;//
-            ball.velocityX = ballImpulse.x;
-            ball.velocityY = ballImpulse.y;
+//            vec2 ballImpulse = normalizedContactVector * impulseMagnitude * 0.2;
+////            ball.carBallCollisionVelocityX = ballImpulse.x;
+////            ball.carBallCollisionVelocityY = ballImpulse.y;//
+//            ball.velocityX = ballImpulse.x;
+//            ball.velocityY = ballImpulse.y;
+
+            // calculate the collision impulse
+            float j = -(1.0f + RESTITUTION) * relativeSpeed;
+            j /= 1.0f / ball.mass + 1.0f / car.mass;
+
+            // apply impulse
+            vec2 impulse = normalizedContactVector*j;
+            vec2 ballImpulse = impulse * (1.0f / ball.mass);
+            vec2 carImpulse = impulse * (1.0f / car.mass);
+            ball.velocityX += ballImpulse.x;
+            ball.velocityY += ballImpulse.y;
+            car.velocityX -= carImpulse.x;
+            car.velocityY -= carImpulse.y;
 
             // Update the ball's position to avoid overlap
 //            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
@@ -1978,10 +1992,19 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
 //            car.velocityX = carImpulse.x;
 //            car.velocityY = carImpulse.y;
         }
-            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
-            vec2 newBallPosition = vec2(ball.xPos, ball.yPos) - separation;
-            ball.xPos = newBallPosition.x;
-            ball.yPos = newBallPosition.y;
+//            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
+//            vec2 newBallPosition = vec2(ball.xPos, ball.yPos) - separation;
+//            ball.xPos = newBallPosition.x;
+//            ball.yPos = newBallPosition.y;
+
+        float dist = distance(vec2(ball_sphere.center), contactPoint);
+        if (dist < ball.radius) {
+            float delta = (ball.radius - dist);
+            vec2 seperate = normalizedContactVector*delta;
+            vec2 newPos = vec2(ball.xPos, ball.yPos) + seperate;
+            ball.xPos = newPos.x;
+            ball.yPos = newPos.y;
+        }
     }
 }
 
