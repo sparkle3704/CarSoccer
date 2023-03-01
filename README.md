@@ -1,4 +1,5 @@
 # gameProject
 
-Bug: Incorrect dodging when doing multiple dodges in a row.
-TODO: Detect and handle all collisions
+Done: ball, car collision detecter and handler
+Bug: sometimes dodge unwantedly
+Todo: Detect and handle all collisions
