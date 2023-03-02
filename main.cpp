@@ -11,7 +11,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-float curSign, prvSign = -1;
+float player2_curSign, player1_curSign, player2_prvSign = -1, player1_prvSign = -1;
 int WINDOW_WIDTH = 1280;
 int WINDOW_HEIGHT = 720;
 
@@ -230,7 +230,7 @@ std::vector<int> calculateColor(double power, double maxPower) {
 
 
 bool quit = false;
-SDL_Texture* carTexture = NULL;
+//SDL_Texture* carTexture = NULL;
 SDL_Texture* ballTexture = NULL;
 SDL_Rect carRect;
 
@@ -440,11 +440,15 @@ public:
     float carBallCollisionVelocityY = 0;
     float carBallCollisionDragAccelerationX = 0;
     float carBallCollisionDragAccelerationY = 0;
+    SDL_Texture* carTexture = NULL;
+    float prvSign = -1, curSign;
+    bool prvDir = 0;
+    bool curDir;
 
 //    vector<vector<Point>> corner{2, vector<Point>(2)};
 
-    Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width) :
-        mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), onGround(onGround), jumping(jumping), angle(angle), dir(dir), flip(flip), clockWise(clockWise), pointing(pointing), width(width) {}
+    Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width, SDL_Texture* carTexture) :
+        mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), onGround(onGround), jumping(jumping), angle(angle), dir(dir), flip(flip), clockWise(clockWise), pointing(pointing), width(width), carTexture(carTexture) {}
 
 
     bool hasCollision() {
@@ -2070,11 +2074,18 @@ int main(int argc, char* argv[]) {
 
 
     ballTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/soccer_ball.png");
-    carTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/spr_casualcar_0.png");
+    SDL_Texture* car1_Texture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/spr_casualcar_0.png");
+    SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/car1_red.png");
+
     vector<vector<Point>> tmp(2, vector<Point>(2));
-    Car car(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 - 100 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100);
-    car.initSize();
-    car.yPos = groundY - car.height;
+    Car car2(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 + 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car2_Texture);
+    Car car1(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 - 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car1_Texture);
+    car2.initSize();
+    car2.yPos = groundY - car2.height;
+
+    car1.initSize();
+    car1.yPos = groundY - car1.height;
+
 
 
 //    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 2*25, 25);
@@ -2082,152 +2093,237 @@ int main(int argc, char* argv[]) {
 
     bool isRunning = true;
 
-    std::string prvLeftRight = "";
+    std::string player2_prvLeftRight = "";
+    std::string player1_prvLeftRight = "";
 
+    /// player1 controls
+    const int player1_scancode_up = SDL_SCANCODE_W;
+    const int player1_scancode_down = SDL_SCANCODE_S;
+    const int player1_scancode_left = SDL_SCANCODE_A;
+    const int player1_scancode_right = SDL_SCANCODE_D;
+    const int player1_scancode_boost = SDL_SCANCODE_G;
+    const int player1_scancode_jump = SDL_SCANCODE_H;
+
+    SDL_Keycode player1_sym_up = SDLK_w;
+    SDL_Keycode player1_sym_down = SDLK_s;
+    SDL_Keycode player1_sym_left = SDLK_a;
+    SDL_Keycode player1_sym_right = SDLK_d;
+    SDL_Keycode player1_sym_boost = SDLK_g;
+    SDL_Keycode player1_sym_jump = SDLK_h;
+    ///
+
+    /// player2 controls
+    const int player2_scancode_up = SDL_SCANCODE_UP;
+    const int player2_scancode_down = SDL_SCANCODE_DOWN;
+    const int player2_scancode_left = SDL_SCANCODE_LEFT;
+    const int player2_scancode_right = SDL_SCANCODE_RIGHT;
+    const int player2_scancode_boost = SDL_SCANCODE_RIGHTBRACKET; // boost
+    const int player2_scancode_jump = SDL_SCANCODE_BACKSLASH; // jump
+
+    SDL_Keycode player2_sym_up = SDLK_UP;
+    SDL_Keycode player2_sym_down = SDLK_DOWN;
+    SDL_Keycode player2_sym_left = SDLK_LEFT;
+    SDL_Keycode player2_sym_right = SDLK_RIGHT;
+    SDL_Keycode player2_sym_boost = SDLK_RIGHTBRACKET;
+    SDL_Keycode player2_sym_jump = SDLK_BACKSLASH;
+    ///
+
+    bool enable_player2 = 1; // red
+    bool enable_player1 = 1; // blue
     while (isRunning) {
         SDL_Event event;
         const Uint8* state = SDL_GetKeyboardState(NULL);
 
-        std::string stateLeft = (state[SDL_SCANCODE_LEFT] ? "1" : "0");
-        std::string stateRight = (state[SDL_SCANCODE_RIGHT] ? "1" : "0");
-        std::string curLeftRight = stateLeft + stateRight;
-        if (state[SDL_SCANCODE_LEFT] && state[SDL_SCANCODE_RIGHT]) {
-            if (prvLeftRight == "10") {
-                car.moveRight();
-                car.setDir(1);
+        /// player2
+        if (enable_player2) {
+            std::string player2_stateLeft = (state[player2_scancode_left] ? "1" : "0");
+            std::string player2_stateRight = (state[player2_scancode_right] ? "1" : "0");
+            std::string player2_curLeftRight = player2_stateLeft + player2_stateRight;
+            if (state[player2_scancode_left] && state[player2_scancode_right]) {
+                if (player2_prvLeftRight == "10") {
+                    car2.moveRight();
+                    car2.setDir(1);
+                }
+                else {
+                    car2.moveLeft();
+                    car2.setDir(0);
+                }
             }
             else {
-                car.moveLeft();
-                car.setDir(0);
+                if (state[player2_scancode_left]) {
+                    car2.moveLeft();
+                    car2.setDir(0);
+                }
+                else if (state[player2_scancode_right]) {
+                    car2.moveRight();
+                    car2.setDir(1);
+                }
+                else {
+                    car2.goingVelocityX = 0;
+                }
             }
-        }
-        else {
-            if (state[SDL_SCANCODE_LEFT]) {
-                car.moveLeft();
-                car.setDir(0);
+
+            while (SDL_PollEvent(&event)) {
+                switch (event.type) {
+                    case SDL_QUIT:
+                        isRunning = false;
+                        break;
+                    case SDL_KEYDOWN:
+                        if (event.key.keysym.sym == player2_sym_jump) { // jump
+                            car2.jump();
+                            car2.canJump = 0;
+                            if (state[SDL_SCANCODE_DOWN]) {
+
+                                car2.dodgeUp();
+                            }
+                            if (state[SDL_SCANCODE_UP]) {
+                                car2.dodgeDown();
+                            }
+                        }
+
+                        if (event.key.keysym.sym == player1_sym_jump) { // jump
+//                            std::cerr << "player1 hit jump" << "\n";
+                            car1.jump();
+                            car1.canJump = 0;
+                            if (state[player1_scancode_down]) {
+                                car1.dodgeUp();
+                            }
+                            if (state[player1_scancode_up]) {
+                                car1.dodgeDown();
+                            }
+                        }
+
+                        break;
+                    case SDL_KEYUP:
+                        if (event.key.keysym.sym == player2_sym_jump) {
+                            car2.canJump = 1;
+                        }
+                        if (event.key.keysym.sym == player1_sym_jump) {
+                            car1.canJump = 1;
+                        }
+                }
             }
-            else if (state[SDL_SCANCODE_RIGHT]) {
-                car.moveRight();
-                car.setDir(1);
+
+            if (player2_curLeftRight == "10" || player2_curLeftRight == "01") {
+                player2_prvLeftRight = player2_curLeftRight;
+            }
+
+            if (state[player2_scancode_up]) {
+                car2.tiltUp();
+            }
+            else if (state[player2_scancode_down]) {
+                car2.tiltDown();
+            }
+
+            if (state[player2_scancode_boost]) {
+                car2.curSign = 1.0;
+                car2.boost(1.0);
             }
             else {
-//                if (car.dir == 1) {
-//                    car.velocityX -= VELOCITY_X_FACTOR;
-//                }
-//                else {
-//                    car.velocityX += VELOCITY_X_FACTOR;
-//                }
-                car.goingVelocityX = 0;
+                car2.curSign = -1.0;
+                car2.boost(-1.0);
             }
         }
 
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_QUIT:
-                    isRunning = false;
-                    break;
-                case SDL_KEYDOWN:
-                    if (event.key.keysym.sym == SDLK_BACKSLASH) {
-//                        std::cerr << "HIT JUMPPPPPPP" << "\n";
-                        car.jump();
-                        car.canJump = 0;
-                        if (state[SDL_SCANCODE_DOWN]) {
 
-                            car.dodgeUp();
+        /// player1
+        if (enable_player1) {
+            std::string player1_stateLeft = (state[player1_scancode_left] ? "1" : "0");
+            std::string player1_stateRight = (state[player1_scancode_right] ? "1" : "0");
+            std::string player1_curLeftRight = player1_stateLeft + player1_stateRight;
+            if (state[player1_scancode_left] && state[player1_scancode_right]) {
+                if (player1_prvLeftRight == "10") {
+                    car1.moveRight();
+                    car1.setDir(1);
+                }
+                else {
+                    car1.moveLeft();
+                    car1.setDir(0);
+                }
+            }
+            else {
+                if (state[player1_scancode_left]) {
+                    car1.moveLeft();
+                    car1.setDir(0);
+                }
+                else if (state[player1_scancode_right]) {
+                    car1.moveRight();
+                    car1.setDir(1);
+                }
+                else {
+                    car1.goingVelocityX = 0;
+                }
+            }
+
+            while (SDL_PollEvent(&event)) {
+                std::cerr << "flsdjflsdkfsldfjslfkjsldfkjsdlfkjsdlfkdjlsfjldsfkj" << "\n";
+                switch (event.type) {
+                    case SDL_QUIT:
+                        isRunning = false;
+                        break;
+                    case SDL_KEYDOWN:
+                        if (event.key.keysym.sym == player1_sym_jump) { // jump
+                            std::cerr << "player1 hit jump" << "\n";
+                            car1.jump();
+                            car1.canJump = 0;
+                            if (state[player1_scancode_down]) {
+                                car1.dodgeUp();
+                            }
+                            if (state[player1_scancode_up]) {
+                                car1.dodgeDown();
+                            }
                         }
-                        if (state[SDL_SCANCODE_UP]) {
-                            car.dodgeDown();
+                        break;
+                    case SDL_KEYUP:
+                        if (event.key.keysym.sym == player1_sym_jump) {
+                            car1.canJump = 1;
                         }
-                    }
-                    // Handle other key down events here
-                    break;
-                case SDL_KEYUP:
-                    if (event.key.keysym.sym == SDLK_BACKSLASH) {
-                        car.canJump = 1;
-                    }
-                // Handle other events here
+                }
+            }
+
+            if (player1_curLeftRight == "10" || player1_curLeftRight == "01") {
+                player1_prvLeftRight = player1_curLeftRight;
+            }
+
+            if (state[player1_scancode_up]) {
+                car1.tiltUp();
+            }
+            else if (state[player1_scancode_down]) {
+                car1.tiltDown();
+            }
+
+            if (state[player1_scancode_boost]) {
+                car1.curSign = 1.0;
+                car1.boost(1.0);
+            }
+            else {
+                car1.curSign = -1.0;
+                car1.boost(-1.0);
             }
         }
-//        std::cerr << "\n\n\n\n\n";
-//        std::string stateLeft = (state[SDL_SCANCODE_LEFT] ? "1" : "0");
-//        std::string stateRight = (state[SDL_SCANCODE_RIGHT] ? "1" : "0");
-//        std::string curLeftRight = stateLeft + stateRight;
-//        if (state[SDL_SCANCODE_LEFT] && state[SDL_SCANCODE_RIGHT]) {
-//            if (prvLeftRight == "10") {
-//                car.moveRight();
-//                car.setDir(1);
-//            }
-//            else {
-//                car.moveLeft();
-//                car.setDir(0);
-//            }
-//        }
-//        else {
-//            if (state[SDL_SCANCODE_LEFT]) {
-//                car.moveLeft();
-//                car.setDir(0);
-//            }
-//            else if (state[SDL_SCANCODE_RIGHT]) {
-//                car.moveRight();
-//                car.setDir(1);
-//            }
-//            else {
-//                car.velocityX = 0;
-//            }
-//        }
-//        std::cerr << car.xPos << " " << car.yPos << "\n";
 
-        if (curLeftRight == "10" || curLeftRight == "01") {
-            prvLeftRight = curLeftRight;
-        }
-
-//        if (state[SDL_SCANCODE_RSHIFT]) {
-//            car.jump();
-//        }
-        if (state[SDL_SCANCODE_UP]) {
-            car.tiltUp();
-//            car.flip = SDL_FLIP_HORIZONTAL;
-        }
-        else if (state[SDL_SCANCODE_DOWN]) {
-            car.tiltDown();
-//            car.flip = SDL_FLIP_HORIZONTAL;
-        }
-
-        if (state[SDL_SCANCODE_RIGHTBRACKET]) {
-            curSign = 1.0;
-            car.boost(1.0);
-        }
-        else {
-//            car.boostVelocityX = 0;
-//            car.boostVelocityY = 0;
-//            car.boostVelocity = 0;
-            curSign = -1.0;
-            car.boost(-1.0);
-//            car.initialBoostAccelerationX = ;
-
-//            car.boost(-1.0);
-        }
-
-//        if (state[])
         SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
         SDL_RenderClear(renderer);
 
         renderGround();
 
-//        SDL_RenderClear(renderer);
-//        std::cerr << car.angle << "\n";
-        car.applyGravity();
+        car2.applyGravity();
+        car1.applyGravity();
 
-//        SDL_RenderClear(renderer);
 
-        car.handleGroundCollision();
-//        std::cerr << "velocityX = " << car.velocityX << "\n";
-//        std::cerr << "VelocityY = " << car.velocityY << "\n";
-        car.moveCar();
+
+        car2.handleGroundCollision();
+        car1.handleGroundCollision();
+
+        car2.moveCar();
+        car1.moveCar();
         ball.moveBall();
 //
-        handleCollisionCarBall(car, ball);
-        car.draw(renderer);
+        handleCollisionCarBall(car2, ball);
+        handleCollisionCarBall(car1, ball);
+        car2.draw(renderer);
+        car1.draw(renderer);
+
         ball.draw(renderer);
         SDL_RenderPresent(renderer);
 //
@@ -2246,8 +2342,10 @@ int main(int argc, char* argv[]) {
 //
 //        ClearScreen();
 
-        prvSign = curSign;
-        prvDir = car.dir;
+        car2.prvSign = car2.curSign;
+        car2.prvDir = car2.dir;
+        car1.prvSign = car1.curSign;
+        car1.prvDir = car1.dir;
 
     }
     closeEverything();
