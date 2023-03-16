@@ -1,5 +1,5 @@
 # gameProject
 
-Done: ball, car collision detecter and handler
-Bug: sometimes dodge unwantedly
-Todo: Detect and handle all collisions
+Done: 2 players + boost
+Bug: fix unnatural dodges
+Todo: Add goal and detections
