@@ -21,6 +21,10 @@ SDL_Renderer* renderer = NULL;
 SDL_Surface* screenSurface = NULL;
 
 float maxSpeed = 0;
+void ClearScreen()
+{
+COORD cursorPosition;	cursorPosition.X = 0;	cursorPosition.Y = 0;	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursorPosition);
+}
 
 struct vec2 {
     float x;
@@ -115,10 +119,7 @@ void drawLine(vec2 u, vec2 v, int r, int g, int b) {
     BBBB = b;
 }
 
-void ClearScreen()
-{
-COORD cursorPosition;	cursorPosition.X = 0;	cursorPosition.Y = 0;	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursorPosition);
-}
+
 
 bool initEverything() {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
@@ -195,18 +196,7 @@ void showSurface(SDL_Surface* surface) {
     }
 }
 
-void closeEverything() {
-//    SDL_DestroyTexture(carB);
 
-    SDL_DestroyRenderer(renderer);
-    renderer = NULL;
-
-    SDL_DestroyWindow(window);
-    window = NULL;
-
-    IMG_Quit();
-    SDL_Quit();
-}
 
 
 std::vector<int> calculateColor(double power, double maxPower) {
@@ -246,11 +236,12 @@ const float JUMP_DRAG_ACCELERATION = 100;
 
 
 const float MAX_BOOST_VELOCITY = 8;
+const float MAX_BOOST_LENGTH = 60;
 const float BOOST_ACCELERATION = 6;
 
-const float MAX_TRAIL_LENGTH = 60;
+const float MAX_HEAD_TRAIL_LENGTH = 60;
 
-const float DODGE_SPIN_FACTOR = 9;
+const float DODGE_SPIN_FACTOR = 7.89; // 9
 const float DODGE_VELOCITY = 7; // 7
 
 struct Point {
@@ -393,7 +384,143 @@ float getAngle(const std::vector<Point>& points) {
 
     return angle_degrees;
 }
+SDL_Texture* boostTexture = NULL;
 
+struct Particle {
+    float x, y;     // position
+    float vx, vy;   // velocity
+    float size;     // size
+    float alpha;    // alpha value (transparency)
+
+    Particle(float x, float y, float vx, float vy, float size, float alpha)
+        : x(x), y(y), vx(vx), vy(vy), size(size), alpha(alpha)
+    {}
+};
+
+std::random_device rd;
+std::mt19937 gen(rd());
+
+vector<Particle> particles[3];
+
+array<int, 3> boostColor(double value, int player) {
+    double maxValue = 255; // set the maximum value
+    int r, g, b;
+    if (player == 2) {
+        if (value <= maxValue / 10) {
+            r = 255;
+            g = 255;
+            b = 255 * 0;
+        } else if (value <= maxValue * 2 / 10) {
+            r = 255 * (value - maxValue / 4) / (maxValue / 4);
+            g = 255 * (value - maxValue / 4) / (maxValue / 4);
+            b = 0 * 255 * (value - maxValue / 4) / (maxValue / 4);
+        } else if (value <= maxValue * 4 / 10) {
+            r = 255;
+            g = 255 * (value - maxValue / 2) / (maxValue / 4);
+            b = 0;
+        } else {
+            r = 255;
+            g = 255 * (maxValue - value) / (maxValue / 4);
+            b = 0;
+        }
+    }
+    else {
+        if (value <= maxValue / 10) {
+            r = 255 * 0;
+            g = 255;
+            b = 255;
+        } else if (value <= maxValue * 2 / 10) {
+            r = 255 * 0 * (value - maxValue / 4) / (maxValue / 4);
+            g = 255 * (value - maxValue / 4) / (maxValue / 4);
+            b = 255 * (value - maxValue / 4) / (maxValue / 4);
+        } else if (value <= maxValue * 4 / 10) {
+            r = 0;
+            g = 255 * (value - maxValue / 2) / (maxValue / 4);
+            b = 255;
+        } else {
+            r = 0;
+            g = 255 * (maxValue - value) / (maxValue / 4);
+            b = 255;
+        }
+    }
+    return {r, g, b};
+}
+
+void addParticle(int numParticles, Point a, Point b, Point c, Point d, int player) {
+
+//    std::uniform_real_distribution<float> v_gen(1, 1);
+//    std::uniform_real_distribution<float> size_gen(1, 20);
+//    std::uniform_real_distribution<float> alpha_gen(1, 1);
+//    std::uniform_real_distribution<float> x_gen(min(a.x, b.x), max(a.x, b.x));
+//    std::uniform_real_distribution<float> y_gen(min(a.y, b.y), max(a.y, b.y));
+
+//    std::uniform_real_distribution<float> v_gen(1, 1);
+    std::uniform_real_distribution<float> size_gen(2, 15);
+    std::uniform_real_distribution<float> alpha_gen(256, 256);
+    std::uniform_real_distribution<float> x_gen(min(a.x, b.x), max(a.x, b.x));
+    std::uniform_real_distribution<float> y_gen(min(a.y, b.y), max(a.y, b.y));
+//    std::uniform_real_distribution<float> v_gen(5, 15);
+    std::uniform_real_distribution<float> v_gen(1, 20);
+
+    vec2 horvec = vec2({c.x - d.x, c.y - d.y}).normalized();
+    for (int i = 1; i <= numParticles; ++i) {
+//        float x = x_gen(gen);
+//        float y = y_gen(gen);
+//        float vx = vx_gen(gen);
+//        float vy = vy_gen(gen);
+
+        float v = v_gen(gen);
+        vec2 vxy = horvec*v;
+
+        float x = x_gen(gen);
+        float y = y_gen(gen);
+        float vx = vxy.x;
+        float vy = vxy.y;
+
+        float size = size_gen(gen);
+        float alpha = alpha_gen(gen);
+        particles[player].push_back(Particle(x, y, vx, vy, size, alpha));
+    }
+    boostTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
+    SDL_DestroyTexture(boostTexture);
+}
+
+void updateBoost(int player) {
+    for (auto& particle: particles[player]) {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.alpha -= 20.0f;
+    }
+//    SDL_DestroyTexture(boostTexture);
+    particles[player].erase(remove_if(particles[player].begin(), particles[player].end(), [](const Particle& p) {
+        return p.alpha <= 0.0f;
+    }), particles[player].end());
+}
+
+void renderBoost(int player) {
+    // Set blending mode for particles
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // Set texture as render target
+    SDL_SetRenderTarget(renderer, boostTexture);
+
+    // Clear texture with transparent color
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+
+    for (auto& particle: particles[player]) {
+        SDL_FRect boostRect = {particle.x - particle.size/2.0f, particle.y - particle.size/2.0f, particle.size, particle.size};
+        array<int, 3> rgb = boostColor(particle.alpha, player);
+        SDL_SetRenderDrawColor(renderer, rgb[0], rgb[1], rgb[2], 255);
+        SDL_RenderFillRectF(renderer, &boostRect);
+//        SDL_DestroyTexture(boostTexture);
+    }
+    // Reset render target to default
+    SDL_SetRenderTarget(renderer, nullptr);
+
+    // Draw texture to screen
+    SDL_RenderCopy(renderer, boostTexture, nullptr, nullptr);
+
+}
 
 class Car {
 public:
@@ -432,6 +559,8 @@ public:
     float spinnedCounterClockWise = 0;
     float dodgeVelocityX = 0;
     float dodgeVelocityY = 0;
+    bool dodgingDown = 0;
+    bool dodgingUp = 0;
 
     Point parallelBeforeDodgeA;
     Point parallelBeforeDodgeB;
@@ -444,11 +573,12 @@ public:
     float prvSign = -1, curSign;
     bool prvDir = 0;
     bool curDir;
+    int player;
 
 //    vector<vector<Point>> corner{2, vector<Point>(2)};
 
-    Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width, SDL_Texture* carTexture) :
-        mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), onGround(onGround), jumping(jumping), angle(angle), dir(dir), flip(flip), clockWise(clockWise), pointing(pointing), width(width), carTexture(carTexture) {}
+    Car(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, bool onGround, bool jumping, float angle, bool dir, SDL_RendererFlip flip, bool clockWise, bool pointing, float width, SDL_Texture* carTexture, int player) :
+        mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), onGround(onGround), jumping(jumping), angle(angle), dir(dir), flip(flip), clockWise(clockWise), pointing(pointing), width(width), carTexture(carTexture), player(player) {}
 
 
     bool hasCollision() {
@@ -748,6 +878,7 @@ public:
 
 
     void boost(float sign) {
+
         SDL_FRect carRect = {xPos, yPos, width, height};
         vector<Point> tmp = getCoords(carRect, angle);
         float x1 = tmp[0].x, y1 = tmp[0].y;
@@ -767,7 +898,7 @@ public:
                     boostVelocity = abs(velocityX);
                 }
                 else {
-                    boostVelocity = 0;
+//                    boostVelocity = 0;
                 }
 //                boostVelocity = abs(goingVelocityX);
 //                sqrt((velocityX + accelerationX*deltaTime)*(velocityX + accelerationX*deltaTime) + (velocityY + accelerationY*deltaTime)*(velocityY + accelerationY*deltaTime))
@@ -924,6 +1055,9 @@ public:
                 spinnedClockWise = 0;
                 dodgeVelocityX = 0;
                 dodgeVelocityY = 0;
+                dodgingDown = 0;
+                dodgingUp = 0;
+                initialBoostAccelerationY = GRAVITY_ACCELERATION;
 //                std::cerr << "done clock" << "\n";
             }
             else {
@@ -931,6 +1065,9 @@ public:
                 angle += DODGE_SPIN_FACTOR;
                 jumpVelocityX = 0;
                 jumpVelocityY = 0;
+
+                gravityVelocityY = 0;
+                initialGravityAccelerationY = 0;
             }
         }
         else if (spinningCounterClockWise) {
@@ -939,6 +1076,9 @@ public:
                 spinnedCounterClockWise = 0;
                 dodgeVelocityX = 0;
                 dodgeVelocityY = 0;
+                dodgingDown = 0;
+                dodgingUp = 0;
+                initialBoostAccelerationY = GRAVITY_ACCELERATION;
 //                std::cerr << "done counterclock" << "\n";
             }
             else {
@@ -946,7 +1086,14 @@ public:
                 angle -= DODGE_SPIN_FACTOR;
                 jumpVelocityX = 0;
                 jumpVelocityY = 0;
+
+                gravityVelocityY = 0;
+                initialGravityAccelerationY = 0;
             }
+        }
+        if (dodgingUp) {
+            boostVelocityX = 0;
+            boostVelocityY = 0;
         }
         correctPosition();
 //        std::cerr << "DODGE VELOCITY X = " << dodgeVelocityX << "\n";
@@ -1097,6 +1244,7 @@ public:
         else {
             spinningClockWise = 1;
         }
+        dodgingDown = 1;
         SDL_FRect carRect = {xPos, yPos, width, height};
         vector<Point> tmp = getCoords(carRect, angle);
         float x1 = tmp[0].x, y1 = tmp[0].y;
@@ -1122,6 +1270,7 @@ public:
     }
 
     void dodgeUp() {
+
         if (spinningClockWise || spinningCounterClockWise) {
             return;
         }
@@ -1131,6 +1280,7 @@ public:
         else {
             spinningCounterClockWise = 1;
         }
+        dodgingUp = 1;
         SDL_FRect carRect = {xPos, yPos, width, height};
         vector<Point> tmp = getCoords(carRect, angle);
         float x1 = tmp[0].x, y1 = tmp[0].y;
@@ -1162,7 +1312,9 @@ public:
         height = float(h) * scale;
     }
 
-    deque<SDL_FPoint> trailBuffer;
+    deque<SDL_FPoint> headBuffer;
+
+
     void draw(SDL_Renderer* renderer) {
         maxSpeed = max(maxSpeed, sqrt((velocityX*velocityX) + (velocityY*velocityY)));
         correctAngle();
@@ -1206,7 +1358,7 @@ public:
 //        int w, h;
 //        SDL_QueryTexture(carTexture, NULL, NULL, &w, &h);
 //
-//        float scale = 100.0f / w;
+//        float scalef = 100.0f / w;
 //        w *= scale;
 //        h *= scale;
 //
@@ -1221,15 +1373,30 @@ public:
 
 
         SDL_FPoint trackedPoint = {(tmp[0].x + tmp[3].x)/2, (tmp[0].y + tmp[3].y)/2};
-        trailBuffer.push_front(trackedPoint);
-        if ((int)trailBuffer.size() > MAX_TRAIL_LENGTH) {
-            trailBuffer.pop_back();
+        headBuffer.push_front(trackedPoint);
+        if ((int)headBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
+            headBuffer.pop_back();
+        }
+
+        SDL_FPoint __a = {tmp[1].x, tmp[1].y};
+        SDL_FPoint __b = {tmp[2].x, tmp[2].y};
+
+//        BoostParticle boostParticle = {__a, __b, flip, angle};
+//        BoostParticle boostParticle = {ParticleSystem(renderer, 100, tmp[1], tmp[2])};
+
+        if (curSign == 1) {
+            addParticle(4, tmp[1], tmp[2], tmp[1], tmp[0], player);
+        }
+        else {
+//            if ((int)boostBuffer.size() > 0) {
+//                boostBuffer.pop_back();
+//            }
         }
 //        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 //        SDL_RenderClear(renderer);
-//        for (int i = 1; i < (int)trailBuffer.size(); ++i) {
+//        for (int i = 1; i < (int)headBuffer.size(); ++i) {
 //            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-//            SDL_RenderDrawLine(renderer, trailBuffer[i-1].x, trailBuffer[i-1].y, trailBuffer[i].x, trailBuffer[i].y);
+//            SDL_RenderDrawLine(renderer, headBuffer[i-1].x, headBuffer[i-1].y, headBuffer[i].x, headBuffer[i].y);
 ////            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
 ////            SDL_RenderPresent(renderer);
 //        }
@@ -1301,15 +1468,18 @@ public:
 //        std::cerr << "\n";
         SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
 
-        for (int i = 1; i < (int)trailBuffer.size(); ++i) {
+        for (int i = 1; i < (int)headBuffer.size(); ++i) {
             float maxSpeed = 14.2;
             float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
             vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
             SDL_SetRenderDrawColor(renderer, getRGB[0], getRGB[1], getRGB[2], 255);
-            SDL_RenderDrawLine(renderer, trailBuffer[i-1].x, trailBuffer[i-1].y, trailBuffer[i].x, trailBuffer[i].y);
+            SDL_RenderDrawLine(renderer, headBuffer[i-1].x, headBuffer[i-1].y, headBuffer[i].x, headBuffer[i].y);
 //            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
 //            SDL_RenderPresent(renderer);
         }
+        updateBoost(player);
+        renderBoost(player);
+
         SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
         SDL_RenderDrawLineF(renderer, tmp[1].x, tmp[1].y, tmp[0].x, tmp[0].y);
 
@@ -1321,7 +1491,8 @@ public:
         SDL_FRect tmpRect = {tmp[0].x - 12/2, tmp[0].y - 12/2, 12, 12};
         SDL_FPoint tmpCenter = {12, 12};
         SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
-
+        SDL_DestroyTexture(tmpTexture);
+//        tmpTexture = NULL;
         drawLine(U, V, RRRR, GGGG, BBBB);
     }
 
@@ -1636,6 +1807,7 @@ public:
 //    }
 };
 
+
 const float RESTITUTION = 0.5;
 class Ball {
 public:
@@ -1662,7 +1834,7 @@ public:
 
 
     void draw(SDL_Renderer* renderer) {
-        std::cerr << "velocityX = " << velocityX << ", " << "velocityY = " << velocityY << "\n";
+//        std::cerr << "velocityX = " << velocityX << ", " << "velocityY = " << velocityY << "\n";
 //        correctAngle();
 //        correctPosition();
         SDL_FPoint center = {radius, radius};
@@ -2058,6 +2230,30 @@ void renderGround() {
     SDL_RenderFillRectF(renderer, &ground);
 }
 
+void closeEverything() {
+//    SDL_DestroyTexture(carB);
+
+    SDL_DestroyRenderer(renderer);
+    renderer = NULL;
+
+    SDL_DestroyWindow(window);
+    window = NULL;
+
+//    SDL_DestroyTexture(boostTexture);
+//    boostTexture = NULL;
+
+//    SDL_DestroyTexture(car1_Texture);
+//    car1_Texture = NULL;
+//
+//    SDL_DestroyTexture(car2_Texture);
+//    car2_Texture = NULL;
+
+    SDL_DestroyTexture(ballTexture);
+    ballTexture = NULL;
+
+    IMG_Quit();
+    SDL_Quit();
+}
 
 int main(int argc, char* argv[]) {
     if (!initEverything()) {
@@ -2078,8 +2274,8 @@ int main(int argc, char* argv[]) {
     SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/car1_red.png");
 
     vector<vector<Point>> tmp(2, vector<Point>(2));
-    Car car2(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 + 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car2_Texture);
-    Car car1(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 - 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car1_Texture);
+    Car car2(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 + 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car2_Texture, 2);
+    Car car1(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 - 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car1_Texture, 1);
     car2.initSize();
     car2.yPos = groundY - car2.height;
 
@@ -2256,7 +2452,6 @@ int main(int argc, char* argv[]) {
             }
 
             while (SDL_PollEvent(&event)) {
-                std::cerr << "flsdjflsdkfsldfjslfkjsldfkjsdlfkjsdlfkdjlsfjldsfkj" << "\n";
                 switch (event.type) {
                     case SDL_QUIT:
                         isRunning = false;
@@ -2339,13 +2534,14 @@ int main(int argc, char* argv[]) {
 //            }
 //            std::cerr << "\n";
 //        }
-//
+
 //        ClearScreen();
 
         car2.prvSign = car2.curSign;
         car2.prvDir = car2.dir;
         car1.prvSign = car1.curSign;
         car1.prvDir = car1.dir;
+//        std::cerr << (int)particles.size() << "\n";
 
     }
     closeEverything();
