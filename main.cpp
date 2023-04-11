@@ -15,10 +15,23 @@ float player2_curSign, player1_curSign, player2_prvSign = -1, player1_prvSign = 
 int WINDOW_WIDTH = 1280;
 int WINDOW_HEIGHT = 720;
 
-float groundY = 700;
+float groundY = WINDOW_HEIGHT*29/30;
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Surface* screenSurface = NULL;
+
+void PrintPoint(SDL_FPoint& point) {
+//    std::cerr << "-----------" << " " << point.x << " " << point.y << "\n";
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderDrawPoint(renderer, point.x, point.y);
+
+    SDL_Texture* tmpTexture = NULL;
+    tmpTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/66598-ball.png");
+    SDL_FRect tmpRect = {point.x - 12 / 2, point.y - 12 / 2, 12, 12};
+    SDL_FPoint tmpCenter = {12, 12};
+    SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
+    SDL_DestroyTexture(tmpTexture);
+}
 
 float maxSpeed = 0;
 void ClearScreen()
@@ -241,8 +254,8 @@ const float BOOST_ACCELERATION = 6;
 
 const float MAX_HEAD_TRAIL_LENGTH = 60;
 
-const float DODGE_SPIN_FACTOR = 7.89; // 9
-const float DODGE_VELOCITY = 7; // 7
+const float DODGE_SPIN_FACTOR = 7.5; // 9 // 7.89
+const float DODGE_VELOCITY = 8.6; // 7
 
 struct Point {
     float x, y;
@@ -385,22 +398,26 @@ float getAngle(const std::vector<Point>& points) {
     return angle_degrees;
 }
 SDL_Texture* boostTexture = NULL;
+SDL_Texture* explosionTexture = NULL;
 
 struct Particle {
     float x, y;     // position
     float vx, vy;   // velocity
     float size;     // size
     float alpha;    // alpha value (transparency)
+    float dragX;
+    float dragY;
 
-    Particle(float x, float y, float vx, float vy, float size, float alpha)
-        : x(x), y(y), vx(vx), vy(vy), size(size), alpha(alpha)
+    Particle(float x, float y, float vx, float vy, float size, float alpha, float dragX, float dragY)
+        : x(x), y(y), vx(vx), vy(vy), size(size), alpha(alpha), dragX(dragX), dragY(dragY)
     {}
 };
 
 std::random_device rd;
 std::mt19937 gen(rd());
 
-vector<Particle> particles[3];
+vector<Particle> boostParticles[3];
+vector<Particle> explosionParticles[3];
 
 array<int, 3> boostColor(double value, int player) {
     double maxValue = 255; // set the maximum value
@@ -446,7 +463,7 @@ array<int, 3> boostColor(double value, int player) {
     return {r, g, b};
 }
 
-void addParticle(int numParticles, Point a, Point b, Point c, Point d, int player) {
+void addBoost(int numParticles, Point a, Point b, Point c, Point d, int player) {
 
 //    std::uniform_real_distribution<float> v_gen(1, 1);
 //    std::uniform_real_distribution<float> size_gen(1, 20);
@@ -479,26 +496,27 @@ void addParticle(int numParticles, Point a, Point b, Point c, Point d, int playe
 
         float size = size_gen(gen);
         float alpha = alpha_gen(gen);
-        particles[player].push_back(Particle(x, y, vx, vy, size, alpha));
+        boostParticles[player].push_back(Particle(x, y, vx, vy, size, alpha, 0, 0));
     }
     boostTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
     SDL_DestroyTexture(boostTexture);
 }
 
 void updateBoost(int player) {
-    for (auto& particle: particles[player]) {
+    for (auto& particle: boostParticles[player]) {
         particle.x += particle.vx;
         particle.y += particle.vy;
         particle.alpha -= 20.0f;
     }
 //    SDL_DestroyTexture(boostTexture);
-    particles[player].erase(remove_if(particles[player].begin(), particles[player].end(), [](const Particle& p) {
+    boostParticles[player].erase(remove_if(boostParticles[player].begin(), boostParticles[player].end(), [](const Particle& p) {
         return p.alpha <= 0.0f;
-    }), particles[player].end());
+    }), boostParticles[player].end());
 }
 
+
 void renderBoost(int player) {
-    // Set blending mode for particles
+    // Set blending mode for boostParticles
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // Set texture as render target
@@ -507,7 +525,7 @@ void renderBoost(int player) {
     // Clear texture with transparent color
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 
-    for (auto& particle: particles[player]) {
+    for (auto& particle: boostParticles[player]) {
         SDL_FRect boostRect = {particle.x - particle.size/2.0f, particle.y - particle.size/2.0f, particle.size, particle.size};
         array<int, 3> rgb = boostColor(particle.alpha, player);
         SDL_SetRenderDrawColor(renderer, rgb[0], rgb[1], rgb[2], 255);
@@ -521,6 +539,131 @@ void renderBoost(int player) {
     SDL_RenderCopy(renderer, boostTexture, nullptr, nullptr);
 
 }
+
+std::random_device rd2;
+std::mt19937 gen2(rd2());
+
+void addExplosion(int numParticles, float startX, float startY, int player) {
+    std::uniform_real_distribution<float> size_gen(1, 15);
+    std::uniform_real_distribution<float> alpha_gen(0, 256);
+    std::uniform_real_distribution<float> angle_gen(0, 2 * M_PI);
+    std::uniform_real_distribution<float> speed_gen(1, 30);
+    for (int i = 1; i <= numParticles; ++i) {
+        float particleAngle = angle_gen(gen2);
+        float speed = speed_gen(gen2);
+        float vx = speed * cos(particleAngle);
+        float vy = speed * sin(particleAngle);
+        float size = size_gen(gen2);
+        float alpha = alpha_gen(gen2);
+        float dragX = 1;
+        if (vx < 0) {
+            dragX *= -1;
+        }
+        float dragY = 0.99;
+        if (vy < 0) {
+            dragY *= -1;
+        }
+        explosionParticles[player].push_back(Particle(startX, startY, vx, vy, size, alpha, dragX, dragY));
+    }
+    explosionTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
+    SDL_DestroyTexture(explosionTexture);
+}
+
+void updateExplosion(int player) {
+//    float deltaTime = 0.0001;
+//    float deltaChange = 90;
+//    float smallVx = 0.0001;
+//    float smallVy = 0.0001;
+
+//    float deltaTime = 0.2;
+//    float deltaChange = 0.01;
+//    float smallVx = 4;
+//    float smallVy = 4;
+
+    float deltaTime = 0.2;
+    float deltaChange = 0.01;
+    float smallVx = 2;
+    float smallVy = 2;
+    for (auto& particle: explosionParticles[player]) {
+        particle.x += particle.vx - particle.dragX * deltaTime;
+        particle.y += particle.vy - particle.dragY * deltaTime;
+        particle.alpha -= 4*deltaTime;
+
+        if (abs(particle.vx) > smallVx) {
+            if (abs(particle.dragX) * deltaTime > abs(particle.vx)) {
+                particle.vx = 0;
+                particle.dragX = 0;
+            }
+            else {
+                particle.vx -= particle.dragX * deltaTime;
+            }
+            if (particle.vx < 0) {
+                particle.dragX -= deltaChange;
+            }
+            else {
+                particle.dragX += deltaChange;
+            }
+        }
+        else {
+            if (particle.vx != 0) {
+//                particle.vx *= -1;
+                particle.vx = (particle.vx/abs(particle.vx)) * -1 * (abs(particle.vx) + 0.1*abs(particle.dragX));
+            }
+        }
+        if (abs(particle.vy) > smallVy) {
+            if (abs(particle.dragY) * deltaTime > abs(particle.vy)) {
+                particle.vy = 0;
+                particle.dragY = 0;
+            }
+            else {
+                particle.vy -= particle.dragY * deltaTime;
+            }
+            if (particle.vy < 0) {
+                particle.dragY -= deltaChange;
+            }
+            else {
+                particle.dragY += deltaChange;
+            }
+        }
+        else {
+
+            if (particle.vy != 0) {
+//                particle.vy *= -1;
+                particle.vy = (particle.vy/abs(particle.vy)) * -1 * (abs(particle.vy) + 0.1*abs(particle.dragY));
+            }
+        }
+    }
+    explosionParticles[player].erase(remove_if(explosionParticles[player].begin(), explosionParticles[player].end(), [](const Particle& p) {
+        return p.alpha <= 0.0f;
+    }), explosionParticles[player].end());
+}
+
+void renderExplosion(int player) {
+    // Set blending mode for boostParticles
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // Set texture as render target
+    SDL_SetRenderTarget(renderer, explosionTexture);
+
+    // Clear texture with transparent color
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+
+    for (auto& particle: explosionParticles[player]) {
+        SDL_FRect boostRect = {particle.x - particle.size/2.0f, particle.y - particle.size/2.0f, particle.size, particle.size};
+        array<int, 3> rgb = boostColor(particle.alpha, player);
+        SDL_SetRenderDrawColor(renderer, rgb[0], rgb[1], rgb[2], 255);
+        SDL_RenderFillRectF(renderer, &boostRect);
+//        SDL_DestroyTexture(explosionTexture);
+    }
+    // Reset render target to default
+    SDL_SetRenderTarget(renderer, nullptr);
+
+    // Draw texture to screen
+    SDL_RenderCopy(renderer, explosionTexture, nullptr, nullptr);
+
+}
+
+
 
 class Car {
 public:
@@ -574,6 +717,9 @@ public:
     bool prvDir = 0;
     bool curDir;
     int player;
+
+    float dodgeDragAccelerationX = 0;
+    float dodgeDragAccelerationY = 0;
 
 //    vector<vector<Point>> corner{2, vector<Point>(2)};
 
@@ -1053,8 +1199,8 @@ public:
             if (spinnedClockWise >= 360) { // 360
                 spinningClockWise = 0;
                 spinnedClockWise = 0;
-                dodgeVelocityX = 0;
-                dodgeVelocityY = 0;
+//                dodgeVelocityX = 0;
+//                dodgeVelocityY = 0;
                 dodgingDown = 0;
                 dodgingUp = 0;
                 initialBoostAccelerationY = GRAVITY_ACCELERATION;
@@ -1074,8 +1220,8 @@ public:
             if (spinnedCounterClockWise >= 360) {
                 spinningCounterClockWise = 0;
                 spinnedCounterClockWise = 0;
-                dodgeVelocityX = 0;
-                dodgeVelocityY = 0;
+//                dodgeVelocityX = 0;
+//                dodgeVelocityY = 0;
                 dodgingDown = 0;
                 dodgingUp = 0;
                 initialBoostAccelerationY = GRAVITY_ACCELERATION;
@@ -1095,6 +1241,7 @@ public:
             boostVelocityX = 0;
             boostVelocityY = 0;
         }
+
         correctPosition();
 //        std::cerr << "DODGE VELOCITY X = " << dodgeVelocityX << "\n";
 //        std::cerr << "DODGE VELOCITY Y = " << dodgeVelocityY << "\n";
@@ -1105,11 +1252,36 @@ public:
         velocityX = goingVelocityX + jumpVelocityX + boostVelocityX + dodgeVelocityX + carBallCollisionVelocityX;
         velocityY =  gravityVelocityY + jumpVelocityY + boostVelocityY + dodgeVelocityY + carBallCollisionVelocityY;
 
-        accelerationX = initialJumpDragAccelerationX + carBallCollisionDragAccelerationX;
-        accelerationY = initialGravityAccelerationY + initialJumpDragAccelerationY + carBallCollisionDragAccelerationY;
+        accelerationX = initialJumpDragAccelerationX + carBallCollisionDragAccelerationX + dodgeDragAccelerationX;
+        accelerationY = initialGravityAccelerationY + initialJumpDragAccelerationY + carBallCollisionDragAccelerationY + dodgeDragAccelerationY;
 
         xPos += (velocityX + accelerationX * deltaTime);
         yPos += (velocityY + accelerationY * deltaTime);
+//
+        if (abs(dodgeDragAccelerationX)*deltaTime > abs(dodgeVelocityX)) {
+            dodgeVelocityX = 0;
+            dodgeDragAccelerationX = 0;
+        }
+        else {
+            dodgeVelocityX += dodgeDragAccelerationX * deltaTime;
+        }
+
+        if (abs(dodgeDragAccelerationY)*deltaTime > abs(dodgeVelocityY)) {
+            dodgeVelocityY = 0;
+            dodgeDragAccelerationY = 0;
+        }
+        else {
+            dodgeVelocityY += dodgeDragAccelerationY * deltaTime;
+        }
+            if (dir != prvDir) {
+            dodgeVelocityX = 0;
+            dodgeDragAccelerationX = 0;
+            }
+//        if (hasCollision()) {
+//            dodgeVelocityX = 0;
+//            dodgeVelocityY = 0;
+//        }
+
 
 //        if (abs(initialDodgeDragAccelerationX)*deltaTime > abs(dodgeVelocityX)) {
 //            dodgeVelocityX = 0;
@@ -1141,6 +1313,7 @@ public:
         else {
             carBallCollisionVelocityY += carBallCollisionDragAccelerationY * deltaTime;
         }
+
         /// ///////////////////////////////////////////////////////
 //
 //        if (curSign == -1) {
@@ -1262,6 +1435,9 @@ public:
         dodgeVelocityX = projected.x;
         dodgeVelocityY = projected.y;
 
+        dodgeDragAccelerationX = -dodgeVelocityX * 0.28;
+        dodgeDragAccelerationY = -dodgeVelocityY * 0.3;
+
 //        initialDodgeDragAccelerationX = -dodgeVelocityX;
 //        initialDodgeDragAccelerationY = -dodgeVelocityY;
 
@@ -1297,6 +1473,9 @@ public:
 
         dodgeVelocityX = -projected.x;
         dodgeVelocityY = -projected.y;
+
+        dodgeDragAccelerationX = -dodgeVelocityX * 0.28; // 0.3
+        dodgeDragAccelerationY = -dodgeVelocityY * 0.3;
 //
 //        initialDodgeDragAccelerationX = -dodgeVelocityX;
 //        initialDodgeDragAccelerationY = -dodgeVelocityY;
@@ -1367,12 +1546,14 @@ public:
 //        std::cerr << "======" << "\n";
 //        std::cerr << "xPos = " << xPos << ", " << "yPos = " << yPos << "\n";
 //        SDL_FPoint center = {width/2, height/2};
+        ///
         SDL_FPoint center = { width/2, height/2 };
 
         SDL_FPoint carCenterPos = {xPos + width/2, yPos + height/2};
 
 
         SDL_FPoint trackedPoint = {(tmp[0].x + tmp[3].x)/2, (tmp[0].y + tmp[3].y)/2};
+        trackedPoint = {(tmp[0].x + tmp[1].x + tmp[2].x + tmp[3].x)/4, (tmp[0].y + tmp[1].y + tmp[2].y + tmp[3].y)/4};
         headBuffer.push_front(trackedPoint);
         if ((int)headBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
             headBuffer.pop_back();
@@ -1385,7 +1566,7 @@ public:
 //        BoostParticle boostParticle = {ParticleSystem(renderer, 100, tmp[1], tmp[2])};
 
         if (curSign == 1) {
-            addParticle(4, tmp[1], tmp[2], tmp[1], tmp[0], player);
+            addBoost(4, tmp[1], tmp[2], tmp[1], tmp[0], player);
         }
         else {
 //            if ((int)boostBuffer.size() > 0) {
@@ -1487,7 +1668,7 @@ public:
 //        SDL_RenderDrawPointF(renderer, tmp[0].x, tmp[0].y);
 
         SDL_Texture* tmpTexture = NULL;
-        tmpTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/66598-ball.png");
+        tmpTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/66598-ball.png");
         SDL_FRect tmpRect = {tmp[0].x - 12/2, tmp[0].y - 12/2, 12, 12};
         SDL_FPoint tmpCenter = {12, 12};
         SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
@@ -1828,16 +2009,41 @@ public:
     float gravityVelocityY = 0;
     float initialGravityAccelerationY = GRAVITY_ACCELERATION;
     const float dampening = 0.99;
+    float omega = 0;
+
 
     Ball(float mass, float velocityX, float velocityY, float accelerationX, float accelerationY, float xPos, float yPos, float radius) :
          mass(mass), velocityX(velocityX), velocityY(velocityY), accelerationX(accelerationX), accelerationY(accelerationY), xPos(xPos), yPos(yPos), radius(radius) {}
+
+    float prvXpos = xPos;
+    float prvYpos = yPos;
+
+    deque<SDL_FPoint> centerBuffer;
 
 
     void draw(SDL_Renderer* renderer) {
 //        std::cerr << "velocityX = " << velocityX << ", " << "velocityY = " << velocityY << "\n";
 //        correctAngle();
 //        correctPosition();
+        SDL_FPoint ballCenter = {xPos + radius, yPos + radius};
+
         SDL_FPoint center = {radius, radius};
+        SDL_FPoint trackedPoint = ballCenter;
+        centerBuffer.push_front(trackedPoint);
+        if ((int)centerBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
+            centerBuffer.pop_back();
+        }
+
+        for (int i = 1; i < (int)centerBuffer.size(); ++i) {
+
+            float maxSpeed = 14.2;
+            float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
+            vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
+            SDL_SetRenderDrawColor(renderer, getRGB[0], getRGB[1], getRGB[2], 255);
+            SDL_RenderDrawLine(renderer, centerBuffer[i-1].x, centerBuffer[i-1].y, centerBuffer[i].x, centerBuffer[i].y);
+//            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
+//            SDL_RenderPresent(renderer);
+        }
 
         SDL_FRect ballRect = {xPos, yPos, radius*2, radius*2};
         vector<Point> tmp = getCoords(ballRect, angle);
@@ -1852,9 +2058,182 @@ public:
         float maxY = max({y1, y2, y3, y4});
 
         SDL_RenderCopyExF(renderer, ballTexture, NULL, &ballRect, angle, &center, SDL_FLIP_NONE);
+        updateExplosion(1);
+        renderExplosion(1);
+        updateExplosion(2);
+        renderExplosion(2);
+
     }
 
     float gravityAcc = 0;
+    void handleSpin() {
+        vec2 ballCenter = {xPos + radius, yPos + radius};
+        vec2 direction = {ballCenter.x + velocityX, ballCenter.y + velocityY};
+        vec2 normalizedDirection = direction.normalized();
+        vec2 velocity = {velocityX, velocityY};
+
+        float stiff = 2;
+        if (yPos + 2*radius >= groundY) {
+            float deltaX = (xPos - prvXpos);
+            omega = deltaX*stiff;
+        }
+        else if (xPos <= 0) {
+            float deltaY = yPos - prvYpos;
+            omega = deltaY*stiff;
+        }
+        else if (xPos + 2*radius >= WINDOW_WIDTH) {
+//            std::cerr << "right wall" << "\n";
+            float deltaY = yPos - prvYpos;
+            omega = -deltaY*stiff;
+        }
+        else if (yPos <= 0) {
+            float deltaX = (xPos - prvXpos);
+//            angle += deltaX;
+            omega = deltaX*stiff;
+        }
+        else {
+            omega *= dampening;
+        }
+//        std::cerr << "omega = " << omega << "\n";
+        angle += omega;
+        prvXpos = xPos;
+        prvYpos = yPos;
+    }
+
+    float distance(float x1, float y1, float x2, float y2) {
+        return sqrtf((float)((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+    }
+
+
+struct Circle {
+    Point center;
+    double radius;
+};
+
+struct LineSegment {
+    Point start;
+    Point end;
+};
+
+double distanceBetweenPoints(Point a, Point b) {
+    return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
+}
+
+// Function to check if point is inside a rectangle
+//bool touchLine(vec2 A, vec2 B) {
+//    Circle circle = {{xPos + radius, yPos + radius}, radius};
+//    LineSegment line = {{A.x, A.y}, {B.x, B.y}};
+//
+//    double lineLength = distanceBetweenPoints(line.start, line.end);
+//    double dotProduct = (((circle.center.x - line.start.x) * (line.end.x - line.start.x)) + ((circle.center.y - line.start.y) * (line.end.y - line.start.y))) / std::pow(lineLength, 2);
+//
+//    Point closestPointOnLine;
+//    closestPointOnLine.x = line.start.x + (dotProduct * (line.end.x - line.start.x));
+//    closestPointOnLine.y = line.start.y + (dotProduct * (line.end.y - line.start.y));
+//
+//    if (distanceBetweenPoints(line.start, closestPointOnLine) + distanceBetweenPoints(closestPointOnLine, line.end) > lineLength) {
+//        return distanceBetweenPoints(circle.center, line.start) <= circle.radius || distanceBetweenPoints(circle.center, line.end) <= circle.radius;
+//    }
+//
+//    return distanceBetweenPoints(circle.center, closestPointOnLine) <= circle.radius;
+//}
+
+bool touchLine(vec2 _A, vec2 _B) {
+    Point A = {_A.x, _A.y};
+    Point B = {_B.x, _B.y};
+    Point C = {xPos + radius, yPos + radius};
+    float r = radius;
+
+    double distSq = ((C.x - A.x) * (B.y - A.y) - (C.y - A.y) * (B.x - A.x)) *
+                    ((C.x - A.x) * (B.y - A.y) - (C.y - A.y) * (B.x - A.x)) /
+                    (pow(B.x - A.x, 2) + pow(B.y - A.y, 2));
+
+    // Check if the squared distance is less than or equal to the square of the circle's radius
+    if (distSq <= r * r && ((C.x - A.x) * (C.x - B.x) + (C.y - A.y) * (C.y - B.y)) <= 0) {
+        return true; // Line segment intersects with circle
+    } else {
+        return false; // Line segment does not intersect with circle
+    }
+}
+
+
+vec2 topRight1 = vec2(120, 238);
+vec2 botRight1 = vec2(120, 470);
+vec2 topLeft1 = vec2(24, 216);
+vec2 botLeft1 = vec2(24, 490);
+
+vec2 topRight2 = vec2(1256, 216);
+vec2 botRight2 = vec2(1256, 490);
+vec2 topLeft2 = vec2(1160, 238);
+vec2 botLeft2 = vec2(1160, 470);
+
+bool touchLineUp1() {
+    if (touchLine(topLeft1, topRight1) && velocityY <= 0) {
+        std::cerr << "Up line" << "\n";
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+bool touchLineDown1() {
+    if (velocityY >= 0) {
+        if (touchLine(botLeft1, botRight1)) {
+            std::cerr << "cham day dcm" << "\n";
+            return 1;
+        }
+    }
+    return 0;
+}
+
+bool touchLineLeft1() {
+    if (touchLine(topLeft1, botLeft1) && velocityX <= 0) {
+        std::cerr << "Left line" << "\n";
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+bool touchLineUp2() {
+    if (touchLine(topLeft2, topRight2) && velocityY <= 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+bool touchLineDown2() {
+    if (touchLine(botLeft2, botRight2) && velocityY >= 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+bool touchLineRight2() {
+    if (touchLine(topRight2, botRight2) && velocityX >= 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+float beforeTouchingLineDown;
+bool prvTouchDown = 0;
+void resetBall() {
+    xPos = WINDOW_WIDTH / 2 - radius;
+    yPos = groundY - radius - 100;
+    velocityX = 0;
+    velocityY = 0;
+    omega = 0;
+}
+//    }
     void moveBall() {
 //        velocityX = carBallCollisionVelocityX;
 //        velocityY = carBallCollisionVelocityY;
@@ -1929,38 +2308,158 @@ public:
 //        velocityX += carBallCollisionVelocityX;
 //        velocityY += carBallCollisionVelocityY;
 
+        drawLine(topRight1, botRight1, 255, 4, 242);
+        drawLine(botRight1, botLeft1, 255, 4, 242);
+        drawLine(botLeft1, topLeft1, 255, 4, 242);
+        drawLine(topLeft1, topRight1, 255, 4, 242);
+
+        drawLine(topRight2, botRight2, 255, 4, 242);
+        drawLine(botRight2, botLeft2, 255, 4, 242);
+        drawLine(botLeft2, topLeft2, 255, 4, 242);
+        drawLine(topLeft2, topRight2, 255, 4, 242);
+
         accelerationX = carBallCollisionDragAccelerationX*0;
         accelerationY = carBallCollisionDragAccelerationY*0 + initialGravityAccelerationY;
 
         xPos += (velocityX + accelerationX * deltaTime);
         yPos += (velocityY + accelerationY * deltaTime);
 
+
         velocityX += accelerationX*deltaTime;
         velocityY += GRAVITY_ACCELERATION*deltaTime;
+
+
         velocityX *= dampening;
         velocityY *= dampening;
-        if (xPos < 0) {
-            restitution = RESTITUTION;
-            xPos = 0;
-            velocityX *= -RESTITUTION;
+//        if (xPos < 0 || touchLineLeft1()) { /// left
+//            restitution = RESTITUTION;
+//            if (touchLineLeft1()) {
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 2);
+//            }
+//            if (xPos < 0) {
+//                xPos = 0;
+//            }
+//            velocityX *= -RESTITUTION;
+//        }
+//
+//        if (touchLineLeft1()) {
+//            std::cerr << "touch line left 1" << "\n";
+//            std::cerr << xPos + 2*radius << " " << topLeft1.x << "\n";
+//            if (xPos + 2*radius <= topLeft1.x) {
+//                xPos = topLeft1.x - 2*radius;
+//                restitution = RESTITUTION;
+//                velocityX *= -RESTITUTION;
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 2);
+//            }
+//        }
+        if (yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y) {
+            if (xPos + 2*radius < topLeft1.x) {
+                xPos = topLeft1.x - 2*radius;
+                restitution = RESTITUTION;
+                velocityX *= -RESTITUTION*3;
+                velocityY *= -RESTITUTION*3;
+                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+                addExplosion(1000, xPos, yPos, 2);
+//                resetBall();
+            }
         }
-        if (xPos + 2*radius > WINDOW_WIDTH) {
+        else {
+            if (xPos < 0) {
+                restitution = RESTITUTION;
+                xPos = 0;
+                velocityX *= -RESTITUTION;
+            }
+        }
+
+        if (yPos >= topRight2.y && yPos + 2*radius <= botRight2.y) {
+            if (xPos > topRight2.x) {
+                xPos = topRight2.x;
+                restitution = -RESTITUTION;
+                velocityX *= -RESTITUTION*3;
+                velocityY *= -RESTITUTION*3;
+                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+                addExplosion(1000, xPos, yPos, 1);
+//                resetBall();
+            }
+        }
+        else if (xPos + 2*radius > WINDOW_WIDTH) {
             restitution = -RESTITUTION;
             xPos = WINDOW_WIDTH - 2*radius;
             velocityX *= -RESTITUTION;
         }
-        if (yPos < 0) {
+//        if (xPos + 2*radius > WINDOW_WIDTH || touchLineRight2()) { /// right
+//            restitution = -RESTITUTION;
+//            if (touchLineRight2()) {
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 1);
+//            }
+//            if (xPos + 2*radius > WINDOW_WIDTH) {
+//                xPos = WINDOW_WIDTH - 2*radius;
+//            }
+//            velocityX *= -RESTITUTION;
+//        }
+        if (yPos < 0 || touchLineUp1() || touchLineUp2()) { /// up
             restitution = RESTITUTION;
-            yPos = 0;
+//            yPos = 0;
+            if (yPos < 0) {
+                yPos = 0;
+            }
             velocityY *= -RESTITUTION;
         }
 
-        if (yPos + 2*radius > groundY) {
+        if (touchLineDown1() || touchLineDown2()) {
+            if (prvTouchDown == 0) {
+                beforeTouchingLineDown = yPos;
+            }
+        }
+        else {
+//            beforeTouchingLineDown = yPos;
+        }
+        prvTouchDown = (touchLineDown1() || touchLineDown2());
+
+        std::cerr << "beforeTouching = " << beforeTouchingLineDown << "\n";
+//        if (((yPos + 2*radius) > groundY) || (touchLineDown1()) || (touchLineDown2())) { /// down
+//            velocityY *= -RESTITUTION*2;
+//            restitution = -RESTITUTION;
+////            yPos = yTouchLineDown;
+//            std::cerr << "touchlinedown 1 or 2" << " " << bool(yPos + 2*radius > groundY) << " " << bool(touchLineDown1()) << " " << bool(touchLineDown2()) << "\n";
+//            if (touchLineDown1()) {
+//                std::cerr << "YES IT FUCKING TOUCHES" << "\n";
+//            }
+//            if ((touchLineDown1()) || (touchLineDown2())) {
+////                velocityY = 0;
+////                restitution = 0;
+//                yPos = beforeTouchingLineDown;
+//                std::cerr << "touching line down and changing yPos" << "\n" << " " << yPos << "\n";
+//            }
+//            if (yPos + 2*radius > groundY) {
+//                yPos = groundY - 2*radius;
+//            }
+//
+////            gravityVelocityY = 0;
+////            std::cerr << "ball dropped onto the ground" << "\n";
+//
+//        }
+
+        if (touchLineDown1() || touchLineDown2()) {
+            std::cerr << "ditmemaycham" << "\n";
+            restitution = RESTITUTION;
+            velocityY *= -RESTITUTION*2;
+//            yPos = beforeTouchingLineDown;
+            if (yPos > beforeTouchingLineDown) {
+                yPos = beforeTouchingLineDown;
+            }
+        }
+        if (yPos + 2*radius > groundY) { /// down
             velocityY *= -RESTITUTION*2;
             restitution = -RESTITUTION;
             yPos = groundY - 2*radius;
+
 //            gravityVelocityY = 0;
 //            std::cerr << "ball dropped onto the ground" << "\n";
+
         }
     }
 
@@ -2127,6 +2626,7 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
 
             vec2 ballVelocity = vec2(ball.velocityX, ball.velocityY);
             vec2 carVelocity = vec2(car.velocityX, car.velocityY);
+
             vec2 relativeVelocity = ballVelocity - carVelocity;
 
             float relativeSpeed = relativeVelocity.dot(normalizedContactVector);
@@ -2154,6 +2654,7 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
             car.velocityX -= carImpulse.x;
             car.velocityY -= carImpulse.y;
 
+            ball.omega = ballImpulse.x * 0.5;
             // Update the ball's position to avoid overlap
 //            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
 //            vec2 newBallPosition = vec2(ball.xPos, ball.yPos) - separation;
@@ -2239,7 +2740,7 @@ void closeEverything() {
     SDL_DestroyWindow(window);
     window = NULL;
 
-//    SDL_DestroyTexture(boostTexture);
+//    SDL_DestroyTexture(explosionTexture);
 //    boostTexture = NULL;
 
 //    SDL_DestroyTexture(car1_Texture);
@@ -2255,6 +2756,26 @@ void closeEverything() {
     SDL_Quit();
 }
 
+SDL_FPoint abcxyz = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2};
+float tmp_delta = 0;
+int tmp_sign = 1;
+void UpdatePrintPoint(SDL_FPoint& point, Ball& ball) {
+    vec2 tmp = {point.x, point.y};
+    float dist = 50;
+
+    vec2 perpen = vec2(ball.velocityX, ball.velocityY).perpendicular().normalized();
+    tmp = tmp + perpen * dist * 0.2 * tmp_sign;
+    tmp_delta += dist * 0.2 * tmp_sign;
+    if (tmp_delta >= dist) {
+        tmp_sign *= -1;
+    }
+    if (tmp_delta <= 0) {
+        tmp_sign *= -1;
+    }
+    point = {tmp.x, tmp.y};
+}
+
+
 int main(int argc, char* argv[]) {
     if (!initEverything()) {
         return 1;
@@ -2267,11 +2788,12 @@ int main(int argc, char* argv[]) {
 //        for (int i = 0; i < 4; ++i) {
 //            std::cerr << "[" << tmp_coord[i].x << ",  " << tmp_coord[i].y << "]" << "\n";
 //        }
+    SDL_Texture* backgroundTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/usable_bg.png");
+    SDL_Texture* frontPart = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/front_part.png");
 
-
-    ballTexture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/soccer_ball.png");
-    SDL_Texture* car1_Texture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/spr_casualcar_0.png");
-    SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "C:/Users/Phong Vu/Desktop/car1_red.png");
+    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/soccer_ball.png");
+    SDL_Texture* car1_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/spr_casualcar_0.png");
+    SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/car1_red.png");
 
     vector<vector<Point>> tmp(2, vector<Point>(2));
     Car car2(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 + 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car2_Texture, 2);
@@ -2500,7 +3022,13 @@ int main(int argc, char* argv[]) {
         SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
         SDL_RenderClear(renderer);
 
-        renderGround();
+        SDL_Rect dstRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }; // Set destination rectangle to cover entire window
+        SDL_Rect srcRect = { 0, 0, 1920, 1080 }; // Example: render the entire texture
+        SDL_RenderCopy(renderer, backgroundTexture,
+                       &srcRect,
+                       &dstRect);
+
+//        renderGround();
 
         car2.applyGravity();
         car1.applyGravity();
@@ -2519,7 +3047,16 @@ int main(int argc, char* argv[]) {
         car2.draw(renderer);
         car1.draw(renderer);
 
+        ball.handleSpin();
         ball.draw(renderer);
+
+//        UpdatePrintPoint(abcxyz, ball);
+//        PrintPoint(abcxyz);
+
+
+        SDL_RenderCopy(renderer, frontPart,
+                       &srcRect,
+                       &dstRect);
         SDL_RenderPresent(renderer);
 //
 //        std::cerr << "maxSpeed = " << maxSpeed << "\n";
@@ -2537,11 +3074,13 @@ int main(int argc, char* argv[]) {
 
 //        ClearScreen();
 
+
+
         car2.prvSign = car2.curSign;
         car2.prvDir = car2.dir;
         car1.prvSign = car1.curSign;
         car1.prvDir = car1.dir;
-//        std::cerr << (int)particles.size() << "\n";
+//        std::cerr << (int)boostParticles.size() << "\n";
 
     }
     closeEverything();
