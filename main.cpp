@@ -2064,6 +2064,8 @@ public:
         renderExplosion(2);
 
     }
+    bool actuallyTouchingDown = 0;
+    bool actuallyTouchingUp = 0;
 
     float gravityAcc = 0;
     void handleSpin() {
@@ -2073,25 +2075,28 @@ public:
         vec2 velocity = {velocityX, velocityY};
 
         float stiff = 2;
-        if (yPos + 2*radius >= groundY) {
+        if (yPos + 2*radius >= groundY || actuallyTouchingDown) { /// touchDown
             float deltaX = (xPos - prvXpos);
             omega = deltaX*stiff;
+            if (actuallyTouchingDown) {
+                std::cerr << "adding Omega" << " " << omega << "======================\n";
+            }
         }
-        else if (xPos <= 0) {
+        else if (xPos <= 0 && (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y))) { /// touchLeft
             float deltaY = yPos - prvYpos;
             omega = deltaY*stiff;
         }
-        else if (xPos + 2*radius >= WINDOW_WIDTH) {
+        else if (xPos + 2*radius >= WINDOW_WIDTH && (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y))) { /// touchRight
 //            std::cerr << "right wall" << "\n";
             float deltaY = yPos - prvYpos;
             omega = -deltaY*stiff;
         }
-        else if (yPos <= 0) {
+        else if (yPos <= 0 || actuallyTouchingUp) { /// touchUp
             float deltaX = (xPos - prvXpos);
 //            angle += deltaX;
             omega = deltaX*stiff;
         }
-        else {
+        else { /// midAir
             omega *= dampening;
         }
 //        std::cerr << "omega = " << omega << "\n";
@@ -2119,24 +2124,6 @@ double distanceBetweenPoints(Point a, Point b) {
     return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
-// Function to check if point is inside a rectangle
-//bool touchLine(vec2 A, vec2 B) {
-//    Circle circle = {{xPos + radius, yPos + radius}, radius};
-//    LineSegment line = {{A.x, A.y}, {B.x, B.y}};
-//
-//    double lineLength = distanceBetweenPoints(line.start, line.end);
-//    double dotProduct = (((circle.center.x - line.start.x) * (line.end.x - line.start.x)) + ((circle.center.y - line.start.y) * (line.end.y - line.start.y))) / std::pow(lineLength, 2);
-//
-//    Point closestPointOnLine;
-//    closestPointOnLine.x = line.start.x + (dotProduct * (line.end.x - line.start.x));
-//    closestPointOnLine.y = line.start.y + (dotProduct * (line.end.y - line.start.y));
-//
-//    if (distanceBetweenPoints(line.start, closestPointOnLine) + distanceBetweenPoints(closestPointOnLine, line.end) > lineLength) {
-//        return distanceBetweenPoints(circle.center, line.start) <= circle.radius || distanceBetweenPoints(circle.center, line.end) <= circle.radius;
-//    }
-//
-//    return distanceBetweenPoints(circle.center, closestPointOnLine) <= circle.radius;
-//}
 
 bool touchLine(vec2 _A, vec2 _B) {
     Point A = {_A.x, _A.y};
@@ -2161,71 +2148,49 @@ vec2 topRight1 = vec2(120, 238);
 vec2 botRight1 = vec2(120, 470);
 vec2 topLeft1 = vec2(24, 216);
 vec2 botLeft1 = vec2(24, 490);
+vec2 floorBackGoal1 = vec2(-3000, 490);
+vec2 ceilBackGoal1 = vec2(-3000, 216);
 
 vec2 topRight2 = vec2(1256, 216);
 vec2 botRight2 = vec2(1256, 490);
 vec2 topLeft2 = vec2(1160, 238);
 vec2 botLeft2 = vec2(1160, 470);
-
-bool touchLineUp1() {
-    if (touchLine(topLeft1, topRight1) && velocityY <= 0) {
-        std::cerr << "Up line" << "\n";
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
+vec2 floorBackGoal2 = vec2(3000, 490);
+vec2 ceilBackGoal2 = vec2(3000, 216);
 
 bool touchLineDown1() {
-    if (velocityY >= 0) {
-        if (touchLine(botLeft1, botRight1)) {
-            std::cerr << "cham day dcm" << "\n";
-            return 1;
-        }
-    }
-    return 0;
+    return Chk2(botLeft1, botRight1, 1);
 }
 
-bool touchLineLeft1() {
-    if (touchLine(topLeft1, botLeft1) && velocityX <= 0) {
-        std::cerr << "Left line" << "\n";
-        return 1;
-    }
-    else {
-        return 0;
-    }
+bool touchFloorBackGoal1() {
+    return Chk2(floorBackGoal1, botLeft1, 1);
+}
+
+bool touchLineUp1() {
+    return Chk2(topLeft1, topRight1, 0);
+}
+
+bool touchCeilBackGoal1() {
+    return Chk2(ceilBackGoal1, topLeft1, 0);
+}
+///
+bool touchLineDown2() {
+    return Chk2(botLeft2, botRight2, 1);
+}
+
+bool touchFloorBackGoal2() {
+    return Chk2(botRight2, floorBackGoal2, 1);
 }
 
 bool touchLineUp2() {
-    if (touchLine(topLeft2, topRight2) && velocityY <= 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
+    return Chk2(topLeft2, topRight2, 0);
 }
 
-bool touchLineDown2() {
-    if (touchLine(botLeft2, botRight2) && velocityY >= 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
+bool touchCeilBackGoal2() {
+    Chk2(topRight2, ceilBackGoal2, 0);
 }
 
-bool touchLineRight2() {
-    if (touchLine(topRight2, botRight2) && velocityX >= 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
 
-float beforeTouchingLineDown;
-bool prvTouchDown = 0;
 void resetBall() {
     xPos = WINDOW_WIDTH / 2 - radius;
     yPos = groundY - radius - 100;
@@ -2233,81 +2198,76 @@ void resetBall() {
     velocityY = 0;
     omega = 0;
 }
+
+vec2 getIntersection(vec2 A, vec2 B, vec2 P) {
+    double x1 = A.x, y1 = A.y;
+    double x2 = B.x, y2 = B.y;
+    double x3 = P.x, y3 = P.y;
+
+    double px = x2 - x1;
+    double py = y2 - y1;
+    double dAB = px * px + py * py;
+
+    double u = ((x3 - x1) * px + (y3 - y1) * py) / dAB;
+    double x = x1 + u * px;
+    double y = y1 + u * py;
+
+    return vec2(x, y);
+}
+
+int orientation(vec2 p1, vec2 p2, vec2 p3) {
+    float val = (p2.y - p1.y) * (p3.x - p2.x)
+              - (p2.x - p1.x) * (p3.y - p2.y);
+
+    if (val == 0)
+        return 0; // collinear
+
+    return (val < 0) ? -1 : 1; // clockwise, counterclockwise
+}
+
+
+bool Chk2(vec2 A, vec2 B, bool down) {
+    int type;
+    if (down == 1) {
+        type = 1;
+    }
+    else {
+        type = -1;
+    }
+    vec2 center = {xPos + radius, yPos + radius};
+    vec2 pointOfContact = getIntersection(A, B, center);
+//    drawLine(center, pointOfContact, 255, 7, 244);
+//    drawLine(B, center, 255, 255, 244);
+    drawLine(A, center, 255, 255, 244);
+    drawLine(pointOfContact, center, 255, 255, 244);
+    drawLine(B, center, 255, 255, 244);
+
+    float d1 = distance(A.x, A.y, pointOfContact.x, pointOfContact.y);
+    float d2 = distance(B.x, B.y, pointOfContact.x, pointOfContact.y);
+    float dAB = distance(A.x, A.y, B.x, B.y);
+//    std::cerr << orientation(A, B, center) << " " << (orientation(A, B, center) == 1 ? "clockwise" : "counterclockwise") << "\n";
+    if (d1 + d2 - dAB == 0) {
+        float dist = distance(center.x, center.y, pointOfContact.x, pointOfContact.y);
+        if (dist <= radius) {
+
+            if (orientation(A, B, center) == type && type*velocityY >= 0) {
+                std::cerr << "NOT CLOCKWISE, OKE" << "\n";
+                float delta = radius - dist;
+                vec2 newPos = {xPos, yPos};
+                newPos = newPos + (center - pointOfContact).normalized()*delta*type;
+                xPos = newPos.x;
+                yPos = newPos.y;
+                return 1;
+            }
+
+        }
+
+    }
+    return 0;
+}
+
 //    }
     void moveBall() {
-//        velocityX = carBallCollisionVelocityX;
-//        velocityY = carBallCollisionVelocityY;
-//
-//        accelerationX = carBallCollisionDragAccelerationX;
-//        accelerationY = carBallCollisionDragAccelerationY;
-//
-//        vec2 ballCenter = vec2(xPos + radius, yPos + radius);
-//        initialGravityAccelerationY = GRAVITY_ACCELERATION;
-//        restitution = 1;
-//        if (xPos < 0) {
-//            restitution = RESTITUTION;
-//            xPos = 0;
-//        }
-//        if (xPos + 2*radius > WINDOW_WIDTH) {
-//            restitution = -RESTITUTION;
-//            xPos = WINDOW_WIDTH - 2*radius;
-//        }
-//        if (yPos < 0) {
-//            restitution = RESTITUTION;
-//            yPos = 0;
-//        }
-//        if (yPos + 2*radius > groundY) {
-//            restitution = -RESTITUTION;
-//            yPos = groundY - 2*radius;
-//            gravityVelocityY = 0;
-//            std::cerr << "ball dropped onto the ground" << "\n";
-////            initialGravityAccelerationY = 0;
-//        }
-////        if (velocityY == 0 && yPos + 2*radius >= groundY) {;
-////            gravityVelocityY = 0;
-////            initialGravityAccelerationY = 0;
-////        }
-////        else {
-////            gravityVelocityY += initialGravityAccelerationY*deltaTime;
-////        }
-//        gravityAcc += GRAVITY_ACCELERATION*deltaTime;
-//
-//        gravityVelocityY += gravityAcc;
-//        velocityY += gravityVelocityY;
-//
-//        if (yPos + 2*radius >= groundY) {
-//            gravityVelocityY = 0;
-//            gravityAcc = 0;
-//        }
-//
-//        xPos += (velocityX + accelerationX * deltaTime) * restitution;
-//        yPos += (velocityY + accelerationY * deltaTime) * restitution + gravityVelocityY;
-
-//        restitution = 1;
-//        if (xPos < 0) {
-//            restitution = RESTITUTION;
-//            xPos = 0;
-//        }
-//        if (xPos + 2*radius > WINDOW_WIDTH) {
-//            restitution = -RESTITUTION;
-//            xPos = WINDOW_WIDTH - 2*radius;
-//        }
-//        if (yPos < 0) {
-//            restitution = RESTITUTION;
-//            yPos = 0;
-//        }
-//        if (yPos + 2*radius > groundY) {
-//            restitution = -RESTITUTION;
-//            yPos = groundY - 2*radius;
-//            gravityVelocityY = 0;
-//            std::cerr << "ball dropped onto the ground" << "\n";
-//        }
-//        velocityX *= restitution;
-//        velocityY *= restitution;
-
-//        velocityX += carBallCollisionVelocityX;
-//        velocityY += carBallCollisionVelocityY;
-
         drawLine(topRight1, botRight1, 255, 4, 242);
         drawLine(botRight1, botLeft1, 255, 4, 242);
         drawLine(botLeft1, topLeft1, 255, 4, 242);
@@ -2317,6 +2277,11 @@ void resetBall() {
         drawLine(botRight2, botLeft2, 255, 4, 242);
         drawLine(botLeft2, topLeft2, 255, 4, 242);
         drawLine(topLeft2, topRight2, 255, 4, 242);
+
+        drawLine(floorBackGoal1, botLeft1, 255, 4, 242);
+        drawLine(botRight2, floorBackGoal2, 255, 4, 242);
+        drawLine(ceilBackGoal1, topLeft1, 255, 4, 242);
+        drawLine(topRight2, ceilBackGoal2, 255, 4, 242);
 
         accelerationX = carBallCollisionDragAccelerationX*0;
         accelerationY = carBallCollisionDragAccelerationY*0 + initialGravityAccelerationY;
@@ -2331,49 +2296,123 @@ void resetBall() {
 
         velocityX *= dampening;
         velocityY *= dampening;
-//        if (xPos < 0 || touchLineLeft1()) { /// left
-//            restitution = RESTITUTION;
-//            if (touchLineLeft1()) {
-//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
-//                addExplosion(1000, xPos, yPos, 2);
+
+        /// ////////////////////////////////////////////////////////
+
+        actuallyTouchingDown = 0;
+        actuallyTouchingUp = 0;
+        if (Chk2(botLeft1, botRight1, 1)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingDown = 1;
+        }
+        else if (Chk2(floorBackGoal1, botLeft1, 1)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingDown = 1;
+        }
+
+        if (Chk2(topLeft1, topRight1, 0)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingUp = 1;
+        }
+        else if (Chk2(ceilBackGoal1, topLeft1, 0)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingUp = 1;
+        }
+
+        if (Chk2(botLeft2, botRight2, 1)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingDown = 1;
+        }
+        else if (Chk2(botRight2, floorBackGoal2, 1)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingDown = 1;
+        }
+
+        if (Chk2(topLeft2, topRight2, 0)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingUp = 1;
+        }
+        else if (Chk2(topRight2, ceilBackGoal2, 0)) {
+            velocityY *= -RESTITUTION;
+            actuallyTouchingUp = 1;
+        }
+//        if (touchLineDown1() || touchLineDown2()) {
+//            if (prvTouchLineDown == 0) {
+//                firstTouchDownY = yPos;
 //            }
-//            if (xPos < 0) {
-//                xPos = 0;
-//            }
-//            velocityX *= -RESTITUTION;
 //        }
-//
-//        if (touchLineLeft1()) {
-//            std::cerr << "touch line left 1" << "\n";
-//            std::cerr << xPos + 2*radius << " " << topLeft1.x << "\n";
-//            if (xPos + 2*radius <= topLeft1.x) {
-//                xPos = topLeft1.x - 2*radius;
+//        prvTouchLineDown = (touchLineDown1() || touchLineDown2());
+//        if (xPos + radius < botLeft1.x) { /// ben trai botleft1.x
+//            if (touchFloorBackGoal1()) {
+//                std::cerr << "touchFloorBackgoal" << "\n";
+//                if (velocityY >= 0) {
+//                    if (yPos + 2*radius >= botLeft1.y) {
+//                        yPos = botLeft1.y - 2*radius;
+//                    }
+//                    velocityY *= -RESTITUTION*2;
+//                    restitution = -RESTITUTION;
+//                    if (xPos + 2*radius < botLeft1.x) {
+//                        xPos = botLeft1.x - 2*radius;
+//                        restitution = RESTITUTION;
+//                        velocityX *= -RESTITUTION*3;
+//                        velocityY *= -RESTITUTION*3;
+//                        std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                        addExplosion(1000, xPos, yPos, 2);
+//                    }
+//                }
+//            }
+//            if (yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y && xPos + 2*radius < botLeft1.x) {
+//                xPos = botLeft1.x - 2*radius;
 //                restitution = RESTITUTION;
-//                velocityX *= -RESTITUTION;
+//                velocityX *= -RESTITUTION*3;
+//                velocityY *= -RESTITUTION*3;
 //                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
 //                addExplosion(1000, xPos, yPos, 2);
 //            }
 //        }
-        if (yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y) {
-            if (xPos + 2*radius < topLeft1.x) {
-                xPos = topLeft1.x - 2*radius;
+//        else {
+//            if (touchLineDown1()) {
+//                if (velocityY >= 0) {
+//                    if (yPos >= firstTouchDownY) {
+//                        yPos = firstTouchDownY;
+//                        velocityY *= -RESTITUTION*2;
+//                        restitution = -RESTITUTION;
+//                    }
+//                }
+//            }
+//        }
+
+        if (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y)) {
+            if (xPos <= 0) {
+                xPos = 0;
+                restitution = RESTITUTION;
+                velocityX *= -RESTITUTION;
+            }
+            if (xPos + 2*radius >= WINDOW_WIDTH) {
+                restitution = -RESTITUTION;
+                xPos = WINDOW_WIDTH - 2*radius;
+                velocityX *= -RESTITUTION;
+            }
+            if (yPos + 2*radius >= groundY) {
+                yPos = groundY - 2*radius;
+                velocityY *= -RESTITUTION*2;
+                restitution = -RESTITUTION;
+            }
+            if (yPos <= 0) {
+                restitution = RESTITUTION;
+                yPos = 0;
+                velocityY *= -RESTITUTION;
+            }
+        }
+        else {
+            if (xPos + 2*radius < botLeft1.x) {
+                xPos = botLeft1.x - 2*radius;
                 restitution = RESTITUTION;
                 velocityX *= -RESTITUTION*3;
                 velocityY *= -RESTITUTION*3;
                 std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
                 addExplosion(1000, xPos, yPos, 2);
-//                resetBall();
             }
-        }
-        else {
-            if (xPos < 0) {
-                restitution = RESTITUTION;
-                xPos = 0;
-                velocityX *= -RESTITUTION;
-            }
-        }
-
-        if (yPos >= topRight2.y && yPos + 2*radius <= botRight2.y) {
             if (xPos > topRight2.x) {
                 xPos = topRight2.x;
                 restitution = -RESTITUTION;
@@ -2381,14 +2420,109 @@ void resetBall() {
                 velocityY *= -RESTITUTION*3;
                 std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
                 addExplosion(1000, xPos, yPos, 1);
-//                resetBall();
             }
         }
-        else if (xPos + 2*radius > WINDOW_WIDTH) {
-            restitution = -RESTITUTION;
-            xPos = WINDOW_WIDTH - 2*radius;
-            velocityX *= -RESTITUTION;
-        }
+
+
+        std::cerr << xPos << " " << yPos << "\n";
+
+//        if ((xPos + radius >= botLeft1.x && touchLineDown1()) ||
+//            (xPos + radius <= botRight2.x && touchLineDown2()) ||
+//            (xPos + radius < botLeft1.x && yPos + 2*radius <= botLeft1.y && touchFloorBackGoal1()) ||
+//            (xPos + radius > botRight2.x && yPos + 2*radius <= botRight2.y && touchFloorBackGoal2())) {
+//                if (prvTouchDown == 0) {
+//                    beforeTouchingLineDown = yPos;
+//                }
+//        }
+//        else {
+////            beforeTouchingLineDown = yPos;
+//        }
+//        prvTouchDown = ((xPos + radius >= botLeft1.x && touchLineDown1()) ||
+//            (xPos + radius <= botRight2.x && touchLineDown2()) ||
+//            (xPos + radius < botLeft1.x && yPos + 2*radius <= botLeft1.y && touchFloorBackGoal1()) ||
+//            (xPos + radius > botRight2.x && yPos + 2*radius <= botRight2.y && touchFloorBackGoal2()));
+//
+//        std::cerr << "beforeTouching = " << beforeTouchingLineDown << "\n";
+//
+//        if ((xPos + radius >= botLeft1.x && touchLineDown1()) ||
+//            (xPos + radius <= botRight2.x && touchLineDown2()) ||
+//            (xPos + radius < botLeft1.x && yPos + 2*radius <= botLeft1.y && touchFloorBackGoal1()) ||
+//            (xPos + radius > botRight2.x && yPos + 2*radius <= botRight2.y && touchFloorBackGoal2())) {
+//                actuallyTouchingDown = 1;
+//                restitution = RESTITUTION;
+//                velocityY *= -RESTITUTION*2;
+//                if (yPos >= beforeTouchingLineDown) {
+//                    yPos = beforeTouchingLineDown;
+//                }
+//        }
+//        else {
+//            actuallyTouchingDown = 0;
+//        }
+//        if (yPos + 2*radius > groundY) { /// ground
+//            velocityY *= -RESTITUTION*2;
+//            restitution = -RESTITUTION;
+//            yPos = groundY - 2*radius;
+//
+//        }
+//        std::cerr << "yPos = " << yPos << "\n";
+//
+//
+//        if (((yPos >= topLeft1.y) && (yPos + 2*radius <= botLeft1.y)) || (yPos <= beforeTouchingLineDown) ||
+//            ((xPos + radius >= botLeft1.x && touchLineDown1()) ||
+//            (xPos + radius <= botRight2.x && touchLineDown2()) ||
+//            (xPos + radius < botLeft1.x && yPos + 2*radius <= botLeft1.y && touchFloorBackGoal1()) ||
+//            (xPos + radius > botRight2.x && yPos + 2*radius <= botRight2.y && touchFloorBackGoal2()))) {
+//            if (xPos + 2*radius < topLeft1.x) {
+//                xPos = topLeft1.x - 2*radius;
+//                restitution = RESTITUTION;
+//                velocityX *= -RESTITUTION*3;
+//                velocityY *= -RESTITUTION*3;
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 2);
+////                resetBall();
+//            }
+//            if (xPos > topRight2.x) {
+//                xPos = topRight2.x;
+//                restitution = -RESTITUTION;
+//                velocityX *= -RESTITUTION*3;
+//                velocityY *= -RESTITUTION*3;
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 1);
+//            }
+//        }
+//        else {
+//
+//            std::cerr << "LOOK AT ME: " << yPos+2*radius << " " << botLeft1.y << "\n";
+//            if (xPos < 0) {
+//                std::cerr << "meh, prolly incorrect ===============================================" << " " << yPos + 2*radius << " " << botLeft1.x << "\n";
+//                restitution = RESTITUTION;
+//                xPos = 0;
+//                velocityX *= -RESTITUTION;
+//            }
+//
+//            if (xPos + 2*radius > WINDOW_WIDTH) {
+//                restitution = -RESTITUTION;
+//                xPos = WINDOW_WIDTH - 2*radius;
+//                velocityX *= -RESTITUTION;
+//            }
+//        }
+
+//        if (yPos >= topRight2.y && yPos + 2*radius <= botRight2.y) {
+//            if (xPos > topRight2.x) {
+//                xPos = topRight2.x;
+//                restitution = -RESTITUTION;
+//                velocityX *= -RESTITUTION*3;
+//                velocityY *= -RESTITUTION*3;
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 1);
+////                resetBall();
+//            }
+//        }
+//        else if (xPos + 2*radius > WINDOW_WIDTH) {
+//            restitution = -RESTITUTION;
+//            xPos = WINDOW_WIDTH - 2*radius;
+//            velocityX *= -RESTITUTION;
+//        }
 //        if (xPos + 2*radius > WINDOW_WIDTH || touchLineRight2()) { /// right
 //            restitution = -RESTITUTION;
 //            if (touchLineRight2()) {
@@ -2400,67 +2534,16 @@ void resetBall() {
 //            }
 //            velocityX *= -RESTITUTION;
 //        }
-        if (yPos < 0 || touchLineUp1() || touchLineUp2()) { /// up
-            restitution = RESTITUTION;
-//            yPos = 0;
-            if (yPos < 0) {
-                yPos = 0;
-            }
-            velocityY *= -RESTITUTION;
-        }
-
-        if (touchLineDown1() || touchLineDown2()) {
-            if (prvTouchDown == 0) {
-                beforeTouchingLineDown = yPos;
-            }
-        }
-        else {
-//            beforeTouchingLineDown = yPos;
-        }
-        prvTouchDown = (touchLineDown1() || touchLineDown2());
-
-        std::cerr << "beforeTouching = " << beforeTouchingLineDown << "\n";
-//        if (((yPos + 2*radius) > groundY) || (touchLineDown1()) || (touchLineDown2())) { /// down
-//            velocityY *= -RESTITUTION*2;
-//            restitution = -RESTITUTION;
-////            yPos = yTouchLineDown;
-//            std::cerr << "touchlinedown 1 or 2" << " " << bool(yPos + 2*radius > groundY) << " " << bool(touchLineDown1()) << " " << bool(touchLineDown2()) << "\n";
-//            if (touchLineDown1()) {
-//                std::cerr << "YES IT FUCKING TOUCHES" << "\n";
+//        if (yPos < 0 || touchLineUp1() || touchLineUp2()) { /// up
+//            restitution = RESTITUTION;
+////            yPos = 0;
+//            if (yPos < 0) {
+//                yPos = 0;
 //            }
-//            if ((touchLineDown1()) || (touchLineDown2())) {
-////                velocityY = 0;
-////                restitution = 0;
-//                yPos = beforeTouchingLineDown;
-//                std::cerr << "touching line down and changing yPos" << "\n" << " " << yPos << "\n";
-//            }
-//            if (yPos + 2*radius > groundY) {
-//                yPos = groundY - 2*radius;
-//            }
-//
-////            gravityVelocityY = 0;
-////            std::cerr << "ball dropped onto the ground" << "\n";
-//
+//            velocityY *= -RESTITUTION;
 //        }
 
-        if (touchLineDown1() || touchLineDown2()) {
-            std::cerr << "ditmemaycham" << "\n";
-            restitution = RESTITUTION;
-            velocityY *= -RESTITUTION*2;
-//            yPos = beforeTouchingLineDown;
-            if (yPos > beforeTouchingLineDown) {
-                yPos = beforeTouchingLineDown;
-            }
-        }
-        if (yPos + 2*radius > groundY) { /// down
-            velocityY *= -RESTITUTION*2;
-            restitution = -RESTITUTION;
-            yPos = groundY - 2*radius;
 
-//            gravityVelocityY = 0;
-//            std::cerr << "ball dropped onto the ground" << "\n";
-
-        }
     }
 
 };
@@ -3033,8 +3116,6 @@ int main(int argc, char* argv[]) {
         car2.applyGravity();
         car1.applyGravity();
 
-
-
         car2.handleGroundCollision();
         car1.handleGroundCollision();
 
@@ -3044,8 +3125,7 @@ int main(int argc, char* argv[]) {
 //
         handleCollisionCarBall(car2, ball);
         handleCollisionCarBall(car1, ball);
-        car2.draw(renderer);
-        car1.draw(renderer);
+
 
         ball.handleSpin();
         ball.draw(renderer);
@@ -3057,6 +3137,11 @@ int main(int argc, char* argv[]) {
         SDL_RenderCopy(renderer, frontPart,
                        &srcRect,
                        &dstRect);
+
+        car2.draw(renderer);
+        car1.draw(renderer);
+
+
         SDL_RenderPresent(renderer);
 //
 //        std::cerr << "maxSpeed = " << maxSpeed << "\n";
