@@ -7,18 +7,24 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <cmath>
+#include <SDL2/SDL_ttf.h>
 
 #include <bits/stdc++.h>
 using namespace std;
 
 float player2_curSign, player1_curSign, player2_prvSign = -1, player1_prvSign = -1;
-int WINDOW_WIDTH = 1280;
-int WINDOW_HEIGHT = 720;
+const int WINDOW_WIDTH = 1920;
+const int WINDOW_HEIGHT = 1080;
+bool fullScreen = 0;
 
 float groundY = WINDOW_HEIGHT*29/30;
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Surface* screenSurface = NULL;
+int prvScoreA = -1;
+int prvScoreB = -1;
+int scoreA = 0;
+int scoreB = 0;
 
 void PrintPoint(SDL_FPoint& point) {
 //    std::cerr << "-----------" << " " << point.x << " " << point.y << "\n";
@@ -139,7 +145,6 @@ bool initEverything() {
 		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
 		return 0;
 	}
-
     window = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (window == nullptr){
         std::cerr<< "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -152,6 +157,10 @@ bool initEverything() {
         SDL_DestroyWindow(window);
         std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
         SDL_Quit();
+        return 0;
+    }
+    if (TTF_Init() != 0) {
+        std::cerr << "TTF_Init Error : " << SDL_GetError() << "\n";
         return 0;
     }
     return 1;
@@ -2144,20 +2153,69 @@ bool touchLine(vec2 _A, vec2 _B) {
 }
 
 
-vec2 topRight1 = vec2(120, 238);
-vec2 botRight1 = vec2(120, 470);
-vec2 topLeft1 = vec2(24, 216);
-vec2 botLeft1 = vec2(24, 490);
-vec2 floorBackGoal1 = vec2(-3000, 490);
-vec2 ceilBackGoal1 = vec2(-3000, 216);
+//vec2 topLeft1, topRight1, botLeft1, botRight1, floorBackGoal1, ceilBackGoal1;
+//vec2 topLeft2, topRight2, botLeft2, botRight2, floorBackGoal2, ceilBackGoal2;
+//vec2 topRight1 = vec2(120, 238);
+//vec2 botRight1 = vec2(120, 470);
+//vec2 topLeft1 = vec2(24, 216);
+//vec2 botLeft1 = vec2(24, 490);
+//vec2 floorBackGoal1 = vec2(-3000, 490);
+//vec2 ceilBackGoal1 = vec2(-3000, 216);
+//
+//vec2 topRight2 = vec2(1256, 216);
+//vec2 botRight2 = vec2(1256, 490);
+//vec2 topLeft2 = vec2(1160, 238);
+//vec2 botLeft2 = vec2(1160, 470);
+//vec2 floorBackGoal2 = vec2(3000, 490);
+//vec2 ceilBackGoal2 = vec2(3000, 216);
 
-vec2 topRight2 = vec2(1256, 216);
-vec2 botRight2 = vec2(1256, 490);
-vec2 topLeft2 = vec2(1160, 238);
-vec2 botLeft2 = vec2(1160, 470);
-vec2 floorBackGoal2 = vec2(3000, 490);
-vec2 ceilBackGoal2 = vec2(3000, 216);
+vec2 topLeft1 = vec2(46, 335);
+vec2 topRight1 = vec2(173, 365);
+vec2 botLeft1 = vec2(46, 728);
+vec2 botRight1 = vec2(174, 701);
+vec2 ceilBackGoal1 = vec2(-3000, 335);
+vec2 floorBackGoal1 = vec2(-3000, 728);
 
+vec2 topLeft2 = vec2(1746, 365);
+vec2 topRight2 = vec2(1873, 335);
+vec2 botLeft2 = vec2(1745, 701);
+vec2 botRight2 = vec2(1873, 728);
+vec2 ceilBackGoal2 = vec2(3000, 335);
+vec2 floorBackGoal2 = vec2(3000, 728);
+
+void initLines() {
+    return;
+    if (fullScreen) {
+        topLeft1 = vec2(46, 335);
+        topRight1 = vec2(173, 365);
+        botLeft1 = vec2(46, 728);
+        botRight1 = vec2(174, 701);
+        ceilBackGoal1 = vec2(-3000, 216);
+        floorBackGoal1 = vec2(-3000, 335);
+
+        topLeft2 = vec2(1746, 365);
+        topRight2 = vec2(1873, 335);
+        botLeft2 = vec2(1745, 701);
+        botRight2 = vec2(1873, 728);
+        ceilBackGoal2 = vec2(3000, 335);
+        floorBackGoal2 = vec2(3000, 728);
+    }
+    else {
+        topRight1 = vec2(120, 238);
+        botRight1 = vec2(120, 470);
+        topLeft1 = vec2(24, 216);
+        botLeft1 = vec2(24, 490);
+        floorBackGoal1 = vec2(-3000, 490);
+        ceilBackGoal1 = vec2(-3000, 216);
+
+        topRight2 = vec2(1256, 216);
+        botRight2 = vec2(1256, 490);
+        topLeft2 = vec2(1160, 238);
+        botLeft2 = vec2(1160, 470);
+        floorBackGoal2 = vec2(3000, 490);
+        ceilBackGoal2 = vec2(3000, 216);
+    }
+}
 bool touchLineDown1() {
     return Chk2(botLeft1, botRight1, 1);
 }
@@ -2223,6 +2281,8 @@ int orientation(vec2 p1, vec2 p2, vec2 p3) {
         return 0; // collinear
 
     return (val < 0) ? -1 : 1; // clockwise, counterclockwise
+    /// clockwise:         -1
+    /// counterclockwise:   1
 }
 
 
@@ -2301,41 +2361,51 @@ bool Chk2(vec2 A, vec2 B, bool down) {
 
         actuallyTouchingDown = 0;
         actuallyTouchingUp = 0;
-        if (Chk2(botLeft1, botRight1, 1)) {
-            velocityY *= -RESTITUTION;
-            actuallyTouchingDown = 1;
-        }
-        else if (Chk2(floorBackGoal1, botLeft1, 1)) {
-            velocityY *= -RESTITUTION;
-            actuallyTouchingDown = 1;
-        }
 
-        if (Chk2(topLeft1, topRight1, 0)) {
+        if (Chk2(botLeft1, botRight1, 1) || Chk2(floorBackGoal1, botLeft1, 1) || Chk2(botLeft2, botRight2, 1) || Chk2(botRight2, floorBackGoal2, 1)) {
             velocityY *= -RESTITUTION;
-            actuallyTouchingUp = 1;
+            actuallyTouchingDown = 1;
         }
-        else if (Chk2(ceilBackGoal1, topLeft1, 0)) {
+        if (Chk2(topLeft1, topRight1, 0) || Chk2(ceilBackGoal1, topLeft1, 0) || Chk2(topLeft2, topRight2, 0) || Chk2(topRight2, ceilBackGoal2, 0)) {
             velocityY *= -RESTITUTION;
             actuallyTouchingUp = 1;
         }
 
-        if (Chk2(botLeft2, botRight2, 1)) {
-            velocityY *= -RESTITUTION;
-            actuallyTouchingDown = 1;
-        }
-        else if (Chk2(botRight2, floorBackGoal2, 1)) {
-            velocityY *= -RESTITUTION;
-            actuallyTouchingDown = 1;
-        }
-
-        if (Chk2(topLeft2, topRight2, 0)) {
-            velocityY *= -RESTITUTION;
-            actuallyTouchingUp = 1;
-        }
-        else if (Chk2(topRight2, ceilBackGoal2, 0)) {
-            velocityY *= -RESTITUTION;
-            actuallyTouchingUp = 1;
-        }
+//        if (Chk2(botLeft1, botRight1, 1)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingDown = 1;
+//        }
+//        else if (Chk2(floorBackGoal1, botLeft1, 1)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingDown = 1;
+//        }
+//
+//        if (Chk2(topLeft1, topRight1, 0)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingUp = 1;
+//        }
+//        else if (Chk2(ceilBackGoal1, topLeft1, 0)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingUp = 1;
+//        }
+//
+//        if (Chk2(botLeft2, botRight2, 1)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingDown = 1;
+//        }
+//        else if (Chk2(botRight2, floorBackGoal2, 1)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingDown = 1;
+//        }
+//
+//        if (Chk2(topLeft2, topRight2, 0)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingUp = 1;
+//        }
+//        else if (Chk2(topRight2, ceilBackGoal2, 0)) {
+//            velocityY *= -RESTITUTION;
+//            actuallyTouchingUp = 1;
+//        }
 //        if (touchLineDown1() || touchLineDown2()) {
 //            if (prvTouchLineDown == 0) {
 //                firstTouchDownY = yPos;
@@ -2382,35 +2452,60 @@ bool Chk2(vec2 A, vec2 B, bool down) {
 //            }
 //        }
 
-        if (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y)) {
-            if (xPos <= 0) {
-                xPos = 0;
-                restitution = RESTITUTION;
-                velocityX *= -RESTITUTION;
-            }
-            if (xPos + 2*radius >= WINDOW_WIDTH) {
-                restitution = -RESTITUTION;
-                xPos = WINDOW_WIDTH - 2*radius;
-                velocityX *= -RESTITUTION;
-            }
-            if (yPos + 2*radius >= groundY) {
-                yPos = groundY - 2*radius;
-                velocityY *= -RESTITUTION*2;
-                restitution = -RESTITUTION;
-            }
-            if (yPos <= 0) {
-                restitution = RESTITUTION;
-                yPos = 0;
-                velocityY *= -RESTITUTION;
-            }
+        if (!((((orientation(topLeft1, topRight1, vec2(xPos + radius, yPos)) != 1) && /// -1                    1
+           (orientation(botLeft1, botRight1, vec2(xPos + radius, yPos + 2*radius)) != -1) && /// 1              2
+           (orientation(floorBackGoal1, botLeft1, vec2(xPos + radius, yPos + 2*radius)) != -1) && /// 1         3
+           (orientation(ceilBackGoal1, topLeft1, vec2(xPos + radius, yPos)) != 1)) || /// -1                    4
+           ((orientation(topLeft2, topRight2, vec2(xPos + radius, yPos)) != 1) && /// -1                        5
+           (orientation(botLeft2, botRight2, vec2(xPos + radius, yPos + 2*radius)) != -1) && /// 1              6
+           (orientation(topRight2, ceilBackGoal2, vec2(xPos + radius, yPos)) != 1) && /// -1                    7
+           (orientation(botRight2, floorBackGoal2, vec2(xPos + radius, yPos + 2*radius)) != -1)) ||  /// 1      8
+            actuallyTouchingDown || actuallyTouchingUp))) { /// 1
+                std::cerr << "OUTSIDE GOAL BOX ----------------------------------------------------" << "\n";
+                int result1 = orientation(topLeft1, topRight1, vec2(xPos + radius, yPos));
+                int result2 = orientation(botLeft1, botRight1, vec2(xPos + radius, yPos + 2*radius));
+                int result3 = orientation(floorBackGoal1, botLeft1, vec2(xPos + radius, yPos + 2*radius));
+                int result4 = orientation(ceilBackGoal1, topLeft1, vec2(xPos + radius, yPos));
+                int result5 = orientation(topLeft2, topRight2, vec2(xPos + radius, yPos));
+                int result6 = orientation(botLeft2, botRight2, vec2(xPos + radius, yPos + 2*radius));
+                int result7 = orientation(topRight2, ceilBackGoal2, vec2(xPos + radius, yPos));
+                int result8 = orientation(botRight2, floorBackGoal2, vec2(xPos + radius, yPos + 2*radius));
+                int result9 = actuallyTouchingDown ? 1 : 0;
+                int result10 = actuallyTouchingUp ? 1 : 0;
+
+                std::cout << result1 << " " << result2 << " " << result3 << " " << result4 << " " << result5 << " " << result6 << " " << result7 << " " << result8 << " " << result9 << " " << result10 << std::endl;
+                if (xPos <= 0) {
+                    xPos = 0;
+                    restitution = RESTITUTION;
+                    velocityX *= -RESTITUTION;
+                }
+                if (xPos + 2*radius >= WINDOW_WIDTH) {
+                    restitution = -RESTITUTION;
+                    xPos = WINDOW_WIDTH - 2*radius;
+                    velocityX *= -RESTITUTION;
+                }
+                if (yPos + 2*radius >= groundY) {
+                    yPos = groundY - 2*radius;
+                    velocityY *= -RESTITUTION*2;
+                    restitution = -RESTITUTION;
+                }
+                if (yPos <= 0) {
+                    restitution = RESTITUTION;
+                    yPos = 0;
+                    velocityY *= -RESTITUTION;
+                }
         }
         else {
+
+
+            std::cerr << "WITHIN GOAL BOX" << "\n";
             if (xPos + 2*radius < botLeft1.x) {
                 xPos = botLeft1.x - 2*radius;
                 restitution = RESTITUTION;
                 velocityX *= -RESTITUTION*3;
                 velocityY *= -RESTITUTION*3;
-                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p2 scores
+                ++scoreB;
                 addExplosion(1000, xPos, yPos, 2);
             }
             if (xPos > topRight2.x) {
@@ -2418,10 +2513,53 @@ bool Chk2(vec2 A, vec2 B, bool down) {
                 restitution = -RESTITUTION;
                 velocityX *= -RESTITUTION*3;
                 velocityY *= -RESTITUTION*3;
-                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p1 scores
+                ++scoreA;
                 addExplosion(1000, xPos, yPos, 1);
             }
         }
+
+
+//        if (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y)) {
+//            if (xPos <= 0) {
+//                xPos = 0;
+//                restitution = RESTITUTION;
+//                velocityX *= -RESTITUTION;
+//            }
+//            if (xPos + 2*radius >= WINDOW_WIDTH) {
+//                restitution = -RESTITUTION;
+//                xPos = WINDOW_WIDTH - 2*radius;
+//                velocityX *= -RESTITUTION;
+//            }
+//            if (yPos + 2*radius >= groundY) {
+//                yPos = groundY - 2*radius;
+//                velocityY *= -RESTITUTION*2;
+//                restitution = -RESTITUTION;
+//            }
+//            if (yPos <= 0) {
+//                restitution = RESTITUTION;
+//                yPos = 0;
+//                velocityY *= -RESTITUTION;
+//            }
+//        }
+//        else {
+//            if (xPos + 2*radius < botLeft1.x) {
+//                xPos = botLeft1.x - 2*radius;
+//                restitution = RESTITUTION;
+//                velocityX *= -RESTITUTION*3;
+//                velocityY *= -RESTITUTION*3;
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 2);
+//            }
+//            if (xPos > topRight2.x) {
+//                xPos = topRight2.x;
+//                restitution = -RESTITUTION;
+//                velocityX *= -RESTITUTION*3;
+//                velocityY *= -RESTITUTION*3;
+//                std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n";
+//                addExplosion(1000, xPos, yPos, 1);
+//            }
+//        }
 
 
         std::cerr << xPos << " " << yPos << "\n";
@@ -2857,12 +2995,98 @@ void UpdatePrintPoint(SDL_FPoint& point, Ball& ball) {
     }
     point = {tmp.x, tmp.y};
 }
+SDL_Surface* surfaceMessage = NULL;
+SDL_Texture* Message = NULL;
+//TTF_Font* Font = NULL;
 
+string toString(int x) {
+    string s;
+    while (x != 0) {
+        s = char((x % 10) + '0') + s;
+        x /= 10;
+    }
+    if ((int)s.size() == 0) {
+        s = "0";
+    }
+    return s;
+}
+pair<SDL_FRect, float> scorePlayer(int score, int player) {
+    float angle;
+    SDL_FRect rect;
+    if (player == 1) {
+        angle = -4.5;
+        if (score < 10) {
+            rect.w = 25; // controls the width of the rect
+            rect.h = 50; // controls the height of the rect
+            rect.x = 868 - 25/2; //controls the rect's x coordinate
+            rect.y = 30 - 50/2; // controls the rect's y coordinte
+        }
+        else if (score <= 99) {
+            rect.w = 50; // controls the width of the rect
+            rect.h = 50; // controls the height of the rect
+            rect.x = 868 - 50/2; //controls the rect's x coordinate
+            rect.y = 30 - 50/2; // controls the rect's y coordinte
+        }
+    }
+    else {
+        angle = 4.5;
+        if (score < 10) {
+            rect.w = 25; // controls the width of the rect
+            rect.h = 50; // controls the height of the rect
+            rect.x = 1051 - 25/2; //controls the rect's x coordinate
+            rect.y = 30 - 50/2; // controls the rect's y coordinte
+        }
+        else if (score <= 99) {
+            rect.w = 50; // controls the width of the rect
+            rect.h = 50; // controls the height of the rect
+            rect.x = 1051 - 50/2; //controls the rect's x coordinate
+            rect.y = 30 - 50/2; // controls the rect's y coordinte
+        }
+    }
+    return {rect, angle};
+}
+
+SDL_Color White = {255, 255, 255};
+SDL_Texture* scoreTextureA = nullptr;
+SDL_Texture* scoreTextureB = nullptr;
+TTF_Font* Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", 1000);
+void displayScore(int score, int player) {
+    if ((player == 1 && score != prvScoreA) || (player == 2 && score != prvScoreB)) {
+
+        string s = toString(score);
+        surfaceMessage = TTF_RenderText_Solid(Font, s.c_str(), White);
+        if (player == 1) {
+            if (scoreTextureA) SDL_DestroyTexture(scoreTextureA);
+            scoreTextureA = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+            prvScoreA = score;
+        } else {
+            if (scoreTextureB) SDL_DestroyTexture(scoreTextureB);
+            scoreTextureB = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+            prvScoreB = score;
+        }
+        SDL_FreeSurface(surfaceMessage);
+    }
+
+    pair<SDL_FRect, float> tmp = scorePlayer(score, player);
+    SDL_FRect Message_rect = tmp.first;
+    if (player == 1) {
+        SDL_RenderCopyExF(renderer, scoreTextureA, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
+    } else {
+        SDL_RenderCopyExF(renderer, scoreTextureB, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
+    }
+}
 
 int main(int argc, char* argv[]) {
+    if (WINDOW_WIDTH == 1920) {
+        fullScreen = 1;
+    }
+    else {
+        fullScreen = 0;
+    }
     if (!initEverything()) {
         return 1;
     }
+
 //    return 0;
 //
 //    std::cerr << "groundY = " << groundY << "\n";
@@ -2873,8 +3097,10 @@ int main(int argc, char* argv[]) {
 //        }
     SDL_Texture* backgroundTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/usable_bg.png");
     SDL_Texture* frontPart = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/front_part.png");
+    SDL_Texture* score = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/score.png");
 
-    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/soccer_ball.png");
+//    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/soccer_ball.png");
+    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/ggg.png");
     SDL_Texture* car1_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/spr_casualcar_0.png");
     SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/car1_red.png");
 
@@ -2890,7 +3116,7 @@ int main(int argc, char* argv[]) {
 
 
 //    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, groundY - 2*25, 25);
-    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/4, WINDOW_HEIGHT/3, 25);
+    Ball ball(10, 0, 0, 0, 0, WINDOW_WIDTH/2 - 5, WINDOW_HEIGHT/3, 25);
 
     bool isRunning = true;
 
@@ -2932,6 +3158,9 @@ int main(int argc, char* argv[]) {
     bool enable_player2 = 1; // red
     bool enable_player1 = 1; // blue
     while (isRunning) {
+        ///
+        ball.initLines();
+
         SDL_Event event;
         const Uint8* state = SDL_GetKeyboardState(NULL);
 
@@ -3107,9 +3336,12 @@ int main(int argc, char* argv[]) {
 
         SDL_Rect dstRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }; // Set destination rectangle to cover entire window
         SDL_Rect srcRect = { 0, 0, 1920, 1080 }; // Example: render the entire texture
+
         SDL_RenderCopy(renderer, backgroundTexture,
                        &srcRect,
                        &dstRect);
+
+
 
 //        renderGround();
 
@@ -3126,22 +3358,43 @@ int main(int argc, char* argv[]) {
         handleCollisionCarBall(car2, ball);
         handleCollisionCarBall(car1, ball);
 
-
         ball.handleSpin();
         ball.draw(renderer);
 
 //        UpdatePrintPoint(abcxyz, ball);
 //        PrintPoint(abcxyz);
 
+        ///
+//        if (ball.yPos + ball.radius*2 <= ball.botLeft1.y + 1e-3) {
+//           SDL_RenderCopy(renderer, frontPart,
+//                           &srcRect,
+//                           &dstRect);
+////        }
 
-        SDL_RenderCopy(renderer, frontPart,
+
+        car2.draw(renderer);
+
+        car1.draw(renderer);
+
+        SDL_RenderCopy(renderer, score,
                        &srcRect,
                        &dstRect);
 
-        car2.draw(renderer);
-        car1.draw(renderer);
+//        displayScore(scoreA, 1);
+////        displayScore(scoreB, 2);
+////        if (scoreA != prvScoreA) {
+//            displayScore(scoreA, 1, Font, scoreTextures);
+////        }
+////        if (scoreB != prvScoreB) {
+//            displayScore(scoreB, 2, Font, scoreTextures);
+////        }
 
-
+//        if (scoreA != prvScoreA) {
+            displayScore(scoreA, 1);
+//        }
+//        if (scoreB != prvScoreB) {
+            displayScore(scoreB, 2);
+//        }
         SDL_RenderPresent(renderer);
 //
 //        std::cerr << "maxSpeed = " << maxSpeed << "\n";
@@ -3165,9 +3418,13 @@ int main(int argc, char* argv[]) {
         car2.prvDir = car2.dir;
         car1.prvSign = car1.curSign;
         car1.prvDir = car1.dir;
+        prvScoreA = scoreA;
+        prvScoreB = scoreB;
 //        std::cerr << (int)boostParticles.size() << "\n";
 
     }
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
     closeEverything();
     return 0;
 }
