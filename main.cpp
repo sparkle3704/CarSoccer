@@ -3049,10 +3049,10 @@ pair<SDL_FRect, float> scorePlayer(int score, int player) {
 SDL_Color White = {255, 255, 255};
 SDL_Texture* scoreTextureA = nullptr;
 SDL_Texture* scoreTextureB = nullptr;
-TTF_Font* Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", 1000);
+TTF_Font* Font = nullptr;
 void displayScore(int score, int player) {
     if ((player == 1 && score != prvScoreA) || (player == 2 && score != prvScoreB)) {
-
+        Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", 1000);
         string s = toString(score);
         surfaceMessage = TTF_RenderText_Solid(Font, s.c_str(), White);
         if (player == 1) {
