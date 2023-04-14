@@ -2298,9 +2298,9 @@ bool Chk2(vec2 A, vec2 B, bool down) {
     vec2 pointOfContact = getIntersection(A, B, center);
 //    drawLine(center, pointOfContact, 255, 7, 244);
 //    drawLine(B, center, 255, 255, 244);
-    drawLine(A, center, 255, 255, 244);
-    drawLine(pointOfContact, center, 255, 255, 244);
-    drawLine(B, center, 255, 255, 244);
+//    drawLine(A, center, 255, 255, 244);
+//    drawLine(pointOfContact, center, 255, 255, 244);
+//    drawLine(B, center, 255, 255, 244);
 
     float d1 = distance(A.x, A.y, pointOfContact.x, pointOfContact.y);
     float d2 = distance(B.x, B.y, pointOfContact.x, pointOfContact.y);
@@ -3010,39 +3010,24 @@ string toString(int x) {
     }
     return s;
 }
-pair<SDL_FRect, float> scorePlayer(int score, int player) {
+pair<SDL_FRect, float> scorePlayer(int player, int w, int h) {
     float angle;
     SDL_FRect rect;
+    vec2 center;
+    rect.w = w;
+    rect.h = h;
     if (player == 1) {
         angle = -4.5;
-        if (score < 10) {
-            rect.w = 25; // controls the width of the rect
-            rect.h = 50; // controls the height of the rect
-            rect.x = 868 - 25/2; //controls the rect's x coordinate
-            rect.y = 30 - 50/2; // controls the rect's y coordinte
-        }
-        else if (score <= 99) {
-            rect.w = 50; // controls the width of the rect
-            rect.h = 50; // controls the height of the rect
-            rect.x = 868 - 50/2; //controls the rect's x coordinate
-            rect.y = 30 - 50/2; // controls the rect's y coordinte
-        }
+        center = vec2(870, 28);
     }
     else {
         angle = 4.5;
-        if (score < 10) {
-            rect.w = 25; // controls the width of the rect
-            rect.h = 50; // controls the height of the rect
-            rect.x = 1051 - 25/2; //controls the rect's x coordinate
-            rect.y = 30 - 50/2; // controls the rect's y coordinte
-        }
-        else if (score <= 99) {
-            rect.w = 50; // controls the width of the rect
-            rect.h = 50; // controls the height of the rect
-            rect.x = 1051 - 50/2; //controls the rect's x coordinate
-            rect.y = 30 - 50/2; // controls the rect's y coordinte
-        }
+        center = vec2(1049, 28);
     }
+    rect.x = center.x - w/2;
+    rect.y = center.y - h/2;
+
+    angle = 0;
     return {rect, angle};
 }
 
@@ -3050,11 +3035,33 @@ SDL_Color White = {255, 255, 255};
 SDL_Texture* scoreTextureA = nullptr;
 SDL_Texture* scoreTextureB = nullptr;
 TTF_Font* Font = nullptr;
+int messageTextWidth[] = {0, 0, 0};
+int messageTextHeight[] = {0, 0, 0};
+
+int getFontSize(int score) {
+    if (score <= 9) {
+        return 50;
+    }
+    else if (score <= 99) {
+        return 45;
+    }
+    else {
+        return 30;
+    }
+}
+
 void displayScore(int score, int player) {
     if ((player == 1 && score != prvScoreA) || (player == 2 && score != prvScoreB)) {
-        Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", 1000);
+        int fontSize =  getFontSize(score);
+        Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", fontSize);
         string s = toString(score);
-        surfaceMessage = TTF_RenderText_Solid(Font, s.c_str(), White);
+//        surfaceMessage = TTF_RenderText_Solid(Font, s.c_str(), White);
+        surfaceMessage = TTF_RenderText_Blended(Font, s.c_str(), White);
+        Font = nullptr;
+        TTF_CloseFont(Font);
+        messageTextWidth[player] = surfaceMessage->w;
+        messageTextHeight[player] = surfaceMessage->h;
+
         if (player == 1) {
             if (scoreTextureA) SDL_DestroyTexture(scoreTextureA);
             scoreTextureA = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
@@ -3067,7 +3074,7 @@ void displayScore(int score, int player) {
         SDL_FreeSurface(surfaceMessage);
     }
 
-    pair<SDL_FRect, float> tmp = scorePlayer(score, player);
+    pair<SDL_FRect, float> tmp = scorePlayer(player, messageTextWidth[player], messageTextHeight[player]);
     SDL_FRect Message_rect = tmp.first;
     if (player == 1) {
         SDL_RenderCopyExF(renderer, scoreTextureA, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
@@ -3087,17 +3094,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-//    return 0;
-//
-//    std::cerr << "groundY = " << groundY << "\n";
-//    SDL_FRect tmp_rect = {WINDOW_WIDTH/2, WINDOW_HEIGHT/2, 50, 25};
-//    vector<Point> tmp_coord = getCoords(tmp_rect, 0);
-//        for (int i = 0; i < 4; ++i) {
-//            std::cerr << "[" << tmp_coord[i].x << ",  " << tmp_coord[i].y << "]" << "\n";
-//        }
     SDL_Texture* backgroundTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/usable_bg.png");
     SDL_Texture* frontPart = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/front_part.png");
-    SDL_Texture* score = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/score.png");
+    SDL_Texture* score = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/score2.png");
 
 //    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/soccer_ball.png");
     ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/ggg.png");
@@ -3157,6 +3156,13 @@ int main(int argc, char* argv[]) {
 
     bool enable_player2 = 1; // red
     bool enable_player1 = 1; // blue
+
+    int timeLeft = 300; // 5 minutes in seconds
+    Uint32 lastTime = SDL_GetTicks();
+
+    SDL_Texture* timeTexture = NULL;
+    SDL_Surface* textSurface = NULL;
+
     while (isRunning) {
         ///
         ball.initLines();
@@ -3330,6 +3336,33 @@ int main(int argc, char* argv[]) {
                 car1.boost(-1.0);
             }
         }
+        ///
+        Uint32 currentTime = SDL_GetTicks();
+        if (currentTime > lastTime + 1000)
+        {
+            timeLeft--;
+            lastTime = currentTime;
+        }
+
+        int minutes = timeLeft / 60;
+        int seconds = timeLeft % 60;
+
+        std::string timeText = std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
+        Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", 50);
+        textSurface = TTF_RenderText_Blended(Font, timeText.c_str(), { 255, 255, 255 });
+        Font = nullptr;
+        TTF_CloseFont(Font);
+
+        timeTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+        int text_width = textSurface->w;
+        int text_height = textSurface->h;
+
+        screenSurface = SDL_GetWindowSurface(window);
+
+        SDL_Rect renderQuad = { 962 - text_width/ 2, 24 - text_height/ 2, text_width, text_height };
+        ///
+
 
         SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
         SDL_RenderClear(renderer);
@@ -3365,11 +3398,11 @@ int main(int argc, char* argv[]) {
 //        PrintPoint(abcxyz);
 
         ///
-//        if (ball.yPos + ball.radius*2 <= ball.botLeft1.y + 1e-3) {
-//           SDL_RenderCopy(renderer, frontPart,
-//                           &srcRect,
-//                           &dstRect);
-////        }
+        if (ball.yPos + ball.radius*2 <= ball.botLeft1.y + 1e-3) {
+           SDL_RenderCopy(renderer, frontPart,
+                           &srcRect,
+                           &dstRect);
+        }
 
 
         car2.draw(renderer);
@@ -3395,6 +3428,8 @@ int main(int argc, char* argv[]) {
 //        if (scoreB != prvScoreB) {
             displayScore(scoreB, 2);
 //        }
+        SDL_RenderCopy(renderer, timeTexture, NULL, &renderQuad);
+
         SDL_RenderPresent(renderer);
 //
 //        std::cerr << "maxSpeed = " << maxSpeed << "\n";
@@ -3411,6 +3446,17 @@ int main(int argc, char* argv[]) {
 //        }
 
 //        ClearScreen();
+
+//		Uint32 currentTime = SDL_GetTicks();
+//
+//        // Update countdown value based on elapsed time
+//        countdownValue = 300 - (currentTime - startTime) / 1000;
+//
+//        int minutes = countDownValue / 60;
+//        int seconds = countDownValue % 60;
+//
+//        std::string timeText = std::to_string(minutes) + ":" + std::to_string(seconds);
+
 
 
 
