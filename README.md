@@ -1,7 +1,7 @@
 # gameProject
 
-Done: 2 players, boost, ball can spin, goal explosions, game background
+Done: 2 players, boost, ball can spin, goal explosions, game background, time, score
 
-Bug: fix unnatural dodges, fix goal posts
+Bug: acceptable unnatural dodges, acceptable goal posts
 
-Todo: Add other features: scoreboard, menu,..
+Todo: Add other features: add sound effects, gamemodes, other effects, menus,..
