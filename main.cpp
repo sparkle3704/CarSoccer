@@ -8,11 +8,15 @@
 #include <windows.h>
 #include <cmath>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 
 #include <bits/stdc++.h>
 using namespace std;
 
 float player2_curSign, player1_curSign, player2_prvSign = -1, player1_prvSign = -1;
+string player1_name = "Player 1";
+string player2_name = "Player 2";
+
 const int WINDOW_WIDTH = 1920;
 const int WINDOW_HEIGHT = 1080;
 bool fullScreen = 0;
@@ -26,13 +30,44 @@ int prvScoreB = -1;
 int scoreA = 0;
 int scoreB = 0;
 
+int explosionChannel = 0;
+int ballHitChannel = 1;
+int boostStartChannel[3] = {-1, 2, 3};
+int boostEndChannel[3] = {-1, 4, 5};
+
+Mix_Chunk* explosionSound = NULL;
+Mix_Chunk* ballHitSound = NULL;
+Mix_Chunk* boostStartSound = NULL;
+Mix_Chunk* boostEndSound = NULL;
+Mix_Music* boostStartMusic = NULL;
+Mix_Music* boostEndMusic = NULL;
+
+SDL_Color White = {255, 255, 255};
+TTF_Font* Font = nullptr;
+
+void playEffect(Mix_Chunk* effectSound, int channel) {
+    Mix_PlayChannel(channel, effectSound, -1);
+}
+
+void stopEffect(int channel) {
+    Mix_HaltChannel(channel);
+}
+
+void playEffectOnce(Mix_Chunk* effectSound, int channel) {
+    if (Mix_Playing(channel)) {
+        stopEffect(channel);
+    }
+    Mix_PlayChannel(channel, effectSound, 0);
+}
+
+
 void PrintPoint(SDL_FPoint& point) {
 //    std::cerr << "-----------" << " " << point.x << " " << point.y << "\n";
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderDrawPoint(renderer, point.x, point.y);
 
     SDL_Texture* tmpTexture = NULL;
-    tmpTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/66598-ball.png");
+    tmpTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/66598-ball.png");
     SDL_FRect tmpRect = {point.x - 12 / 2, point.y - 12 / 2, 12, 12};
     SDL_FPoint tmpCenter = {12, 12};
     SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
@@ -136,34 +171,6 @@ void drawLine(vec2 u, vec2 v, int r, int g, int b) {
     RRRR = r;
     GGGG = g;
     BBBB = b;
-}
-
-
-
-bool initEverything() {
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
-		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
-		return 0;
-	}
-    window = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-    if (window == nullptr){
-        std::cerr<< "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return 0;
-    }
-    // SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (renderer == nullptr) {
-        SDL_DestroyWindow(window);
-        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return 0;
-    }
-    if (TTF_Init() != 0) {
-        std::cerr << "TTF_Init Error : " << SDL_GetError() << "\n";
-        return 0;
-    }
-    return 1;
 }
 
 SDL_Surface* load_and_optimize_surface(std::string path) {
@@ -1047,13 +1054,18 @@ public:
         float maxY = max({y1, y2, y3, y4});
 
         if (sign == 1) {
+//            playEffect(boostStartSound);
             if (prvSign == -1) {
-
+                playEffectOnce(boostStartSound, boostStartChannel[player]);
+                playEffect(boostEndSound, boostEndChannel[player]);
                 if (velocityY == 0) {
                     boostVelocity = abs(velocityX);
                 }
                 else {
 //                    boostVelocity = 0;
+//                    boostVelocity = (velocityX;
+//                    boostVelocity = sqrt((velocityX + accelerationX*deltaTime)*(velocityX + accelerationX*deltaTime) + (velocityY + accelerationY*deltaTime)*(velocityY + accelerationY*deltaTime)) - sign*BOOST_ACCELERATION*deltaTime*2;
+
                 }
 //                boostVelocity = abs(goingVelocityX);
 //                sqrt((velocityX + accelerationX*deltaTime)*(velocityX + accelerationX*deltaTime) + (velocityY + accelerationY*deltaTime)*(velocityY + accelerationY*deltaTime))
@@ -1061,12 +1073,16 @@ public:
                 gravityVelocityY = GRAVITY_ACCELERATION/5;
             }
             else {
+//                playEffect(boostEndSound, 0);
                 goingVelocityX = 0;
                 gravityVelocityY = GRAVITY_ACCELERATION/5;
             }
         }
         else {
+
             if (prvSign == 1) {
+                stopEffect(boostEndChannel[player]);
+//                playEffect(boostEndSound);
                 if (velocityY == 0) {
                     if (goingVelocityX != 0) {
                         boostVelocity -= sign*BOOST_ACCELERATION * deltaTime;
@@ -1677,7 +1693,7 @@ public:
 //        SDL_RenderDrawPointF(renderer, tmp[0].x, tmp[0].y);
 
         SDL_Texture* tmpTexture = NULL;
-        tmpTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/66598-ball.png");
+        tmpTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/66598-ball.png");
         SDL_FRect tmpRect = {tmp[0].x - 12/2, tmp[0].y - 12/2, 12, 12};
         SDL_FPoint tmpCenter = {12, 12};
         SDL_RenderCopyExF(renderer, tmpTexture, NULL, &tmpRect, 0, &tmpCenter, SDL_FLIP_NONE);
@@ -1998,6 +2014,75 @@ public:
 };
 
 
+void toUpper(string& s) {
+    for (auto& c : s) {
+        c = toupper(c);
+    }
+}
+
+SDL_Surface* scoredSurface = nullptr;
+SDL_Texture* scoredTexture = nullptr;
+SDL_Rect scoredRect;
+
+Uint32 scoredBeginTime;
+SDL_Surface* reminderSurface = nullptr;
+SDL_Texture* reminderTexture = nullptr;
+SDL_Rect reminderRect;
+
+Uint32 reminderBeginTime;
+
+SDL_Color ORANGE = {244, 145, 89};
+SDL_Color BLUE = {79, 128, 236};
+
+void printPlayerScored(int player) {
+    scoredBeginTime = SDL_GetTicks();
+    string s;
+    Font = TTF_OpenFont("D:/gameProject/game/assets/fonts/usethis/sans.ttf", 100); ///
+    if (player == 1) {
+        s = player1_name + " SCORED";
+        scoredSurface = TTF_RenderText_Blended(Font, s.c_str(), BLUE); ///
+    }
+    else {
+        s = player2_name + " SCORED";
+        scoredSurface = TTF_RenderText_Blended(Font, s.c_str(), ORANGE); ///
+    }
+
+    scoredTexture = SDL_CreateTextureFromSurface(renderer, scoredSurface); ///
+
+    int text_width = scoredSurface->w; ///
+    int text_height = scoredSurface->h; ///
+
+    vec2 center = vec2(960, 286);
+    scoredRect = {center.x - text_width/2, center.y - text_height/2, text_width, text_height};
+
+    Font = nullptr; ///
+    TTF_CloseFont(Font); ///
+//    SDL_FreeSurface(scoredSurface);
+    scoredSurface = nullptr;
+}
+
+SDL_Color RED = {255, 0, 0};
+void printReminder() {
+    reminderBeginTime = SDL_GetTicks();
+    string s;
+    Font = TTF_OpenFont("D:/gameProject/game/assets/fonts/usethis/sans.ttf", 100); ///
+    s = "1 MINUTE REMAINING";
+    reminderSurface = TTF_RenderText_Blended(Font, s.c_str(), RED); ///
+
+    reminderTexture = SDL_CreateTextureFromSurface(renderer, reminderSurface); ///
+
+    int text_width = reminderSurface->w; ///
+    int text_height = reminderSurface->h; ///
+
+    vec2 center = vec2(960, 286);
+    reminderRect = {center.x - text_width/2, center.y - text_height/2, text_width, text_height};
+
+    Font = nullptr; ///
+    TTF_CloseFont(Font); ///
+//    SDL_FreeSurface(reminderSurface);
+    reminderSurface = nullptr;
+}
+
 const float RESTITUTION = 0.5;
 class Ball {
 public:
@@ -2254,6 +2339,8 @@ void resetBall() {
     yPos = groundY - radius - 100;
     velocityX = 0;
     velocityY = 0;
+    accelerationX = 0;
+    accelerationY = 0;
     omega = 0;
 }
 
@@ -2365,10 +2452,16 @@ bool Chk2(vec2 A, vec2 B, bool down) {
         if (Chk2(botLeft1, botRight1, 1) || Chk2(floorBackGoal1, botLeft1, 1) || Chk2(botLeft2, botRight2, 1) || Chk2(botRight2, floorBackGoal2, 1)) {
             velocityY *= -RESTITUTION;
             actuallyTouchingDown = 1;
+            if (abs(velocityY) > 0.16) {
+                playEffectOnce(ballHitSound, ballHitChannel);
+            }
         }
         if (Chk2(topLeft1, topRight1, 0) || Chk2(ceilBackGoal1, topLeft1, 0) || Chk2(topLeft2, topRight2, 0) || Chk2(topRight2, ceilBackGoal2, 0)) {
             velocityY *= -RESTITUTION;
             actuallyTouchingUp = 1;
+            if (abs(velocityY) > 0.16) {
+                playEffectOnce(ballHitSound, ballHitChannel);
+            }
         }
 
 //        if (Chk2(botLeft1, botRight1, 1)) {
@@ -2474,51 +2567,61 @@ bool Chk2(vec2 A, vec2 B, bool down) {
                 int result10 = actuallyTouchingUp ? 1 : 0;
 
                 std::cout << result1 << " " << result2 << " " << result3 << " " << result4 << " " << result5 << " " << result6 << " " << result7 << " " << result8 << " " << result9 << " " << result10 << std::endl;
-                if (xPos <= 0) {
+                if (xPos < 0) { /// left
                     xPos = 0;
                     restitution = RESTITUTION;
                     velocityX *= -RESTITUTION;
+                    playEffectOnce(ballHitSound, ballHitChannel);
                 }
-                if (xPos + 2*radius >= WINDOW_WIDTH) {
+                if (xPos + 2*radius > WINDOW_WIDTH) { /// right
                     restitution = -RESTITUTION;
                     xPos = WINDOW_WIDTH - 2*radius;
                     velocityX *= -RESTITUTION;
+                    playEffectOnce(ballHitSound, ballHitChannel);
                 }
-                if (yPos + 2*radius >= groundY) {
+                if (yPos + 2*radius > groundY) { /// down
                     yPos = groundY - 2*radius;
                     velocityY *= -RESTITUTION*2;
                     restitution = -RESTITUTION;
+                if (abs(velocityY) > 0.16) {
+                    playEffectOnce(ballHitSound, ballHitChannel);
                 }
-                if (yPos <= 0) {
+                }
+                if (yPos < 0) { /// up
                     restitution = RESTITUTION;
                     yPos = 0;
                     velocityY *= -RESTITUTION;
+                    playEffectOnce(ballHitSound, ballHitChannel);
                 }
         }
         else {
-
-
             std::cerr << "WITHIN GOAL BOX" << "\n";
             if (xPos + 2*radius < botLeft1.x) {
                 xPos = botLeft1.x - 2*radius;
                 restitution = RESTITUTION;
                 velocityX *= -RESTITUTION*3;
                 velocityY *= -RESTITUTION*3;
+                playEffectOnce(explosionSound, explosionChannel);
+//                Mix_PlayChannel(-1, explosionSound, 0);
                 std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p2 scores
+                printPlayerScored(2);
                 ++scoreB;
                 addExplosion(1000, xPos, yPos, 2);
+                resetBall();
             }
             if (xPos > topRight2.x) {
                 xPos = topRight2.x;
                 restitution = -RESTITUTION;
                 velocityX *= -RESTITUTION*3;
                 velocityY *= -RESTITUTION*3;
+                playEffectOnce(explosionSound, explosionChannel);
                 std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p1 scores
                 ++scoreA;
                 addExplosion(1000, xPos, yPos, 1);
+                printPlayerScored(1);
+                resetBall();
             }
         }
-
 
 //        if (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y)) {
 //            if (xPos <= 0) {
@@ -2562,7 +2665,7 @@ bool Chk2(vec2 A, vec2 B, bool down) {
 //        }
 
 
-        std::cerr << xPos << " " << yPos << "\n";
+        std::cerr << velocityX << " " << velocityY << "\n";
 
 //        if ((xPos + radius >= botLeft1.x && touchLineDown1()) ||
 //            (xPos + radius <= botRight2.x && touchLineDown2()) ||
@@ -2853,6 +2956,7 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
             float relativeSpeed = relativeVelocity.dot(normalizedContactVector);
 
         if (relativeSpeed < 0.0f) {
+
 //            float impulseMagnitude = (-(1.0f + ball.restitution) * relativeSpeed) / ((1.0f / ball.mass) + (1.0f / car.mass));
 
             /// BALL
@@ -2866,6 +2970,10 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
             float j = -(1.0f + RESTITUTION) * relativeSpeed;
             j /= 1.0f / ball.mass + 1.0f / car.mass;
 
+            if (abs(j) > 7) {
+                playEffectOnce(ballHitSound, ballHitChannel);
+            }
+//            std::cerr << "j = " << j << "\n";
             // apply impulse
             vec2 impulse = normalizedContactVector*j;
             vec2 ballImpulse = impulse * (1.0f / ball.mass);
@@ -2970,9 +3078,26 @@ void closeEverything() {
 //    SDL_DestroyTexture(car2_Texture);
 //    car2_Texture = NULL;
 
+
+	//Free the sound effects
+//	Mix_FreeChunk( gScratch );
+//	Mix_FreeChunk( gHigh );
+//	Mix_FreeChunk( gMedium );
+//	Mix_FreeChunk( gLow );
+//	gScratch = NULL;
+//	gHigh = NULL;
+//	gMedium = NULL;
+//	gLow = NULL;
+
+	//Free the music
+	Mix_FreeChunk(explosionSound);
+	explosionSound = NULL;
+
+
     SDL_DestroyTexture(ballTexture);
     ballTexture = NULL;
 
+    Mix_Quit();
     IMG_Quit();
     SDL_Quit();
 }
@@ -3031,10 +3156,8 @@ pair<SDL_FRect, float> scorePlayer(int player, int w, int h) {
     return {rect, angle};
 }
 
-SDL_Color White = {255, 255, 255};
 SDL_Texture* scoreTextureA = nullptr;
 SDL_Texture* scoreTextureB = nullptr;
-TTF_Font* Font = nullptr;
 int messageTextWidth[] = {0, 0, 0};
 int messageTextHeight[] = {0, 0, 0};
 
@@ -3053,9 +3176,8 @@ int getFontSize(int score) {
 void displayScore(int score, int player) {
     if ((player == 1 && score != prvScoreA) || (player == 2 && score != prvScoreB)) {
         int fontSize =  getFontSize(score);
-        Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", fontSize);
+        Font = TTF_OpenFont("D:/gameProject/game/assets/fonts/usethis/sans.ttf", fontSize);
         string s = toString(score);
-//        surfaceMessage = TTF_RenderText_Solid(Font, s.c_str(), White);
         surfaceMessage = TTF_RenderText_Blended(Font, s.c_str(), White);
         Font = nullptr;
         TTF_CloseFont(Font);
@@ -3071,7 +3193,7 @@ void displayScore(int score, int player) {
             scoreTextureB = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
             prvScoreB = score;
         }
-        SDL_FreeSurface(surfaceMessage);
+//        SDL_FreeSurface(surfaceMessage);
     }
 
     pair<SDL_FRect, float> tmp = scorePlayer(player, messageTextWidth[player], messageTextHeight[player]);
@@ -3081,6 +3203,53 @@ void displayScore(int score, int player) {
     } else {
         SDL_RenderCopyExF(renderer, scoreTextureB, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
     }
+}
+
+bool initEverything() {
+    toUpper(player1_name);
+    toUpper(player2_name);
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");
+
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
+		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+		return 0;
+	}
+	if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+		return 0;
+	}
+    window = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    if (window == nullptr){
+        std::cerr<< "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 0;
+    }
+    // SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (renderer == nullptr) {
+        SDL_DestroyWindow(window);
+        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 0;
+    }
+    if (TTF_Init() != 0) {
+        std::cerr << "TTF_Init Error : " << SDL_GetError() << "\n";
+        return 0;
+    }
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " <<  Mix_GetError() << "\n";
+        return 0;
+    }
+
+    ///
+//    explosionSound = Mix_LoadWAV("D:/gameProject/game/assets/audio/test.wav");
+//    ballHitSound = Mix_LoadWAV("D:/gameProject/game/assets/audio/ballhitsound.wav");
+//    boostStartSound = Mix_LoadWAV("D:/gameProject/game/assets/audio/booststart.wav");
+//    boostEndSound = Mix_LoadWAV("D:/gameProject/game/assets/audio/boostend.wav");
+
+    screenSurface = SDL_GetWindowSurface(window);
+    return 1;
 }
 
 int main(int argc, char* argv[]) {
@@ -3094,14 +3263,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Texture* backgroundTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/usable_bg.png");
-    SDL_Texture* frontPart = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/front_part.png");
-    SDL_Texture* score = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/score2.png");
+    SDL_Texture* backgroundTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/usable_bg.png");
+    SDL_Texture* frontPart = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/front_part.png");
+    SDL_Texture* score = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/score2.png");
 
-//    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/soccer_ball.png");
-    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/ggg.png");
-    SDL_Texture* car1_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/spr_casualcar_0.png");
-    SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/car1_red.png");
+//    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/soccer_ball.png");
+    ballTexture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/ggg.png");
+    SDL_Texture* car1_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/spr_casualcar_0.png");
+    SDL_Texture* car2_Texture = IMG_LoadTexture(renderer, "D:/gameProject/game/assets/textures/car1_red.png");
 
     vector<vector<Point>> tmp(2, vector<Point>(2));
     Car car2(100, 0, 0, 0, 0, WINDOW_WIDTH / 2 + 300 / 2, groundY - 32, 1, 0, 0, 0, SDL_FLIP_NONE, 0, 0, 100, car2_Texture, 2);
@@ -3157,11 +3326,14 @@ int main(int argc, char* argv[]) {
     bool enable_player2 = 1; // red
     bool enable_player1 = 1; // blue
 
-    int timeLeft = 300; // 5 minutes in seconds
+//    int timeLeft = 300; // 5 minutes in seconds
+    int timeLeft = 70; // 5 minutes in seconds
+    int timeElapsed = 0;
     Uint32 lastTime = SDL_GetTicks();
 
     SDL_Texture* timeTexture = NULL;
     SDL_Surface* textSurface = NULL;
+    bool countDown = 0;
 
     while (isRunning) {
         ///
@@ -3338,32 +3510,48 @@ int main(int argc, char* argv[]) {
         }
         ///
         Uint32 currentTime = SDL_GetTicks();
-        if (currentTime > lastTime + 1000)
-        {
-            timeLeft--;
-            lastTime = currentTime;
+        int minutes, seconds;
+        if (countDown == 1) {
+            if (currentTime > lastTime + 1000)
+            {
+                timeLeft--;
+                lastTime = currentTime;
+            }
+
+            minutes = timeLeft / 60;
+            seconds = timeLeft % 60;
+
+            if (minutes == 1 && seconds == 0) {
+                printReminder();
+            }
         }
+        else {
+            if (currentTime > lastTime + 1000) {
+                timeElapsed++;
+                lastTime = currentTime;
+            }
 
-        int minutes = timeLeft / 60;
-        int seconds = timeLeft % 60;
+            minutes = timeElapsed / 60;
+            seconds = timeElapsed % 60;
+        }
+        std::string timeText = std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds); ///
+        Font = TTF_OpenFont("D:/gameProject/game/assets/fonts/usethis/sans.ttf", 50); ///
+        textSurface = TTF_RenderText_Blended(Font, timeText.c_str(), { 255, 255, 255 }); ///
+        Font = nullptr; ///
+        TTF_CloseFont(Font); ///
 
-        std::string timeText = std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
-        Font = TTF_OpenFont("D:/gameProject/game/assets/Fonts/usethis/sans.ttf", 50);
-        textSurface = TTF_RenderText_Blended(Font, timeText.c_str(), { 255, 255, 255 });
-        Font = nullptr;
-        TTF_CloseFont(Font);
+        timeTexture = SDL_CreateTextureFromSurface(renderer, textSurface); ///
 
-        timeTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+        int text_width = textSurface->w; ///
+        int text_height = textSurface->h; ///
 
-        int text_width = textSurface->w;
-        int text_height = textSurface->h;
-
-        screenSurface = SDL_GetWindowSurface(window);
+//        screenSurface = SDL_GetWindowSurface(window);
 
         SDL_Rect renderQuad = { 962 - text_width/ 2, 24 - text_height/ 2, text_width, text_height };
         ///
 
 
+        ///
         SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
         SDL_RenderClear(renderer);
 
@@ -3398,7 +3586,7 @@ int main(int argc, char* argv[]) {
 //        PrintPoint(abcxyz);
 
         ///
-        if (ball.yPos + ball.radius*2 <= ball.botLeft1.y + 1e-3) {
+        if (ball.yPos + ball.radius*2 <= ball.botLeft1.y + 1e-1) {
            SDL_RenderCopy(renderer, frontPart,
                            &srcRect,
                            &dstRect);
@@ -3428,7 +3616,17 @@ int main(int argc, char* argv[]) {
 //        if (scoreB != prvScoreB) {
             displayScore(scoreB, 2);
 //        }
+
         SDL_RenderCopy(renderer, timeTexture, NULL, &renderQuad);
+
+        if (scoredTexture != nullptr && currentTime - scoredBeginTime <= 3*1000) {
+            SDL_RenderCopy(renderer, scoredTexture, NULL, &scoredRect);
+        }
+        else {
+            if (reminderTexture != nullptr && currentTime - reminderBeginTime <= 3*1000) {
+                SDL_RenderCopy(renderer, reminderTexture, NULL, &reminderRect);
+            }
+        }
 
         SDL_RenderPresent(renderer);
 //
