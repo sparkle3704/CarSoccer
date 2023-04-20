@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="CarSoccer" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/CarSoccer" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/CarSoccer" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add directory="D:/libraries/SDL2/include" />
+			<Add directory="D:/libraries" />
+			<Add directory="D:/libraries/SDL2/include/SDL2" />
+		</Compiler>
+		<Linker>
+			<Add option="-lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf" />
+			<Add library="mingw32" />
+			<Add library="SDL2main" />
+			<Add library="SDL2.dll" />
+			<Add library="user32" />
+			<Add library="gdi32" />
+			<Add library="winmm" />
+			<Add library="dxguid" />
+			<Add library="D:/libraries/SDL2/lib/libSDL2_ttf.a" />
+			<Add library="D:/libraries/SDL2/lib/libSDL2_ttf.dll.a" />
+			<Add library="D:/libraries/SDL2/bin/SDL2_ttf.dll" />
+			<Add directory="D:/libraries/SDL2/lib" />
+			<Add directory="D:/libraries" />
+			<Add directory="D:/libraries/SDL2" />
+		</Linker>
+		<ExtraCommands>
+			<Add after="XCOPY $(#sdl2)\bin\*.dll $(TARGET_OUTPUT_DIR) /D /Y" />
+		</ExtraCommands>
+		<Unit filename="Ball.cpp" />
+		<Unit filename="Ball.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Boost.cpp" />
+		<Unit filename="Boost.h" />
+		<Unit filename="Car.cpp" />
+		<Unit filename="Car.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="CarBallCollisionHandler.cpp" />
+		<Unit filename="CarBallCollisionHandler.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="CommonFunctions.cpp" />
+		<Unit filename="CommonFunctions.h" />
+		<Unit filename="Constants.cpp" />
+		<Unit filename="Constants.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Controls.cpp" />
+		<Unit filename="Controls.h" />
+		<Unit filename="Explosion.cpp" />
+		<Unit filename="Explosion.h" />
+		<Unit filename="PlayerScored.cpp" />
+		<Unit filename="PlayerScored.h" />
+		<Unit filename="SDL_Contexts.cpp" />
+		<Unit filename="SDL_Contexts.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Sounds.cpp" />
+		<Unit filename="Sounds.h" />
+		<Unit filename="Stats.cpp" />
+		<Unit filename="Stats.h" />
+		<Unit filename="Structs.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="TextElements.cpp" />
+		<Unit filename="TextElements.h" />
+		<Unit filename="main.cpp" />
+		<Extensions>
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
