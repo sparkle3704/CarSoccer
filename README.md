@@ -1,4 +1,4 @@
-# gameProject
+# CarSoccer
 
 Done: 2 players, boost, ball can spin, goal explosions, game background, time, score
 
