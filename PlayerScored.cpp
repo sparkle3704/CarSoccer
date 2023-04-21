@@ -5,7 +5,7 @@
 #include "SDL_Contexts.h"
 #include "Structs.h"
 #include "Stats.h"
-#pragma once
+#include "Ball.h"
 
 /// Each player's score
 SDL_Texture* scoreTextureA = nullptr;
@@ -30,6 +30,7 @@ SDL_Rect reminderRect;
 SDL_Texture* timeTexture = nullptr;
 SDL_Surface* textSurface = nullptr;
 
+std::string inMidAirText = "0:00";
 int getFontSize(int score) {
     if (score <= 9) {
         return 50;
@@ -56,7 +57,9 @@ std::string toString(int x) {
 
 
 void printPlayerScored(int player) {
+
     scoredBeginTime = SDL_GetTicks();
+
     std::string s;
     Font = TTF_OpenFont(fontPath.c_str(), 100); ///
     if (player == 1) {
@@ -130,7 +133,7 @@ void displayScore(int score, int player) {
         int fontSize =  getFontSize(score);
         Font = TTF_OpenFont(fontPath.c_str(), fontSize);
         std::string s = toString(score);
-        surfaceMessage = TTF_RenderText_Blended(Font, s.c_str(), White);
+        surfaceMessage = TTF_RenderText_Blended(Font, s.c_str(), WHITE);
         Font = nullptr;
         TTF_CloseFont(Font);
         messageTextWidth[player] = surfaceMessage->w;
@@ -162,6 +165,7 @@ Uint64 currentTime;
 int timeElapsed = 0;
 int timeLeft = 300;
 bool countDown = 1;
+bool displayingScored = 0;
 void displayTime() { /// printReminder, Scored, Time
     currentTime = SDL_GetTicks();
     int minutes, seconds;
@@ -206,9 +210,11 @@ void displayTime() { /// printReminder, Scored, Time
 
 
     if (scoredTexture != nullptr && currentTime - scoredBeginTime <= 3*1000) {
+        displayingScored = 1;
         SDL_RenderCopy(renderer, scoredTexture, NULL, &scoredRect);
     }
     else {
+        displayingScored = 0;
         if (reminderTexture != nullptr && currentTime - reminderBeginTime <= 3*1000) {
             SDL_RenderCopy(renderer, reminderTexture, NULL, &reminderRect);
         }
@@ -221,4 +227,69 @@ void displayScores() {
 
     prvScoreA = scoreA;
     prvScoreB = scoreB;
+}
+
+Uint64 currentInMidAir = -1;
+Uint64 startInMidAir = -1;
+SDL_Surface* inMidAirSurface = nullptr;
+SDL_Texture* inMidAirTexture = nullptr;
+void displayInMidAir(Ball& ball) {
+    SDL_Color textColor = WHITE;
+    if (ball.inMidAir || displayingScored) {
+        int minutes, seconds, elapsed;
+        if (ball.inMidAir) {
+            if (startInMidAir == -1) {
+                startInMidAir = SDL_GetTicks();
+            }
+            currentInMidAir = SDL_GetTicks();
+            elapsed = (currentInMidAir - startInMidAir) / 1000;
+            minutes = elapsed / 60;
+            seconds = elapsed % 60;
+        }
+        /// Time
+        if (!displayingScored) {
+            inMidAirText = toString(minutes) + ":" + (seconds <= 9 ? "0" : "") + toString(seconds); ///
+        }
+        else {
+            textColor = GREEN;
+            startInMidAir = -1;
+        }
+        if (displayingScored) {
+            fontOutline = TTF_OpenFont(fontPath.c_str(), 25); ///
+            TTF_SetFontOutline(fontOutline, 2);
+            inMidAirSurface = TTF_RenderText_Blended(fontOutline, inMidAirText.c_str(), BLACK); ///
+            fontOutline = nullptr; ///
+            TTF_CloseFont(fontOutline); ///
+
+            inMidAirTexture = SDL_CreateTextureFromSurface(renderer, inMidAirSurface); ///
+
+            int text_width = inMidAirSurface->w; ///
+            int text_height = inMidAirSurface->h; ///
+
+            SDL_FRect renderQuad = { 960 - text_width/ 2, 90 - text_height/ 2, text_width, text_height };
+
+            if (elapsed != 0 || displayingScored) {
+                SDL_RenderCopyF(renderer, inMidAirTexture, NULL, &renderQuad);
+            }
+        }
+
+        Font = TTF_OpenFont(fontPath.c_str(), 25); ///
+        inMidAirSurface = TTF_RenderText_Blended(Font, inMidAirText.c_str(), textColor); ///
+        Font = nullptr; ///
+        TTF_CloseFont(Font); ///
+
+        inMidAirTexture = SDL_CreateTextureFromSurface(renderer, inMidAirSurface); ///
+
+        int text_width = inMidAirSurface->w; ///
+        int text_height = inMidAirSurface->h; ///
+
+        SDL_Rect renderQuad = { 960 - text_width/ 2, 90 - text_height/ 2, text_width, text_height };
+
+        if (elapsed != 0 || displayingScored) {
+            SDL_RenderCopy(renderer, inMidAirTexture, NULL, &renderQuad);
+        }
+    }
+    else {
+        startInMidAir = -1;
+    }
 }

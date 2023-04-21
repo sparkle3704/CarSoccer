@@ -1,5 +1,6 @@
 #ifndef CONSTANTS_H_INCLUDED
 #define CONSTANTS_H_INCLUDED
+#pragma once
 #include "Structs.h"
 
 extern const int WINDOW_WIDTH;

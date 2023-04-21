@@ -1,6 +1,6 @@
 #ifndef CARBALLCOLLISIONHANDLER_H_INCLUDED
 #define CARBALLCOLLISIONHANDLER_H_INCLUDED
-
+#pragma once
 #include "Structs.h"
 #include "Car.h"
 #include "Ball.h"

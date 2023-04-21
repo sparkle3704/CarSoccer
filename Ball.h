@@ -1,6 +1,7 @@
 #ifndef BALL_H_INCLUDED
 #define BALL_H_INCLUDED
 
+#pragma once
 #include <deque>
 #include <SDL2/SDL.h>
 #include "Structs.h"
@@ -16,6 +17,7 @@ public:
     float velocityY = 0;
     float mass = 50;
     float omega = 0;
+    bool inMidAir = 0;
 
     void moveBall();
     void draw();

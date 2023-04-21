@@ -1,5 +1,6 @@
 #ifndef COMMONFUNCTIONS_H_INCLUDED
 #define COMMONFUNCTIONS_H_INCLUDED
+#pragma once
 #include <vector>
 #include "Structs.h"
 #include <array>

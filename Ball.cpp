@@ -269,12 +269,14 @@ void Ball::moveBall() {
     actuallyTouchingDown = 0;
     actuallyTouchingUp = 0;
 
+    inMidAir = 1;
     if (Chk2(botLeft1, botRight1, 1) || Chk2(floorBackGoal1, botLeft1, 1) || Chk2(botLeft2, botRight2, 1) || Chk2(botRight2, floorBackGoal2, 1)) {
         velocityY *= -RESTITUTION;
         actuallyTouchingDown = 1;
         if (abs(velocityY) > 0.16) {
             playEffectOnce(ballHitSound, ballHitChannel);
         }
+        inMidAir = 0;
     }
     if (Chk2(topLeft1, topRight1, 0) || Chk2(ceilBackGoal1, topLeft1, 0) || Chk2(topLeft2, topRight2, 0) || Chk2(topRight2, ceilBackGoal2, 0)) {
         velocityY *= -RESTITUTION;
@@ -325,6 +327,7 @@ void Ball::moveBall() {
                 if (abs(velocityY) > 0.16) {
                     playEffectOnce(ballHitSound, ballHitChannel);
                 }
+                inMidAir = 0;
             }
             if (yPos < 0) { /// up
                 restitution = RESTITUTION;

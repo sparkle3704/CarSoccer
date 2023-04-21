@@ -1,5 +1,6 @@
 #ifndef BOOST_H_INCLUDED
 #define BOOST_H_INCLUDED
+#pragma once
 #include "Structs.h"
 #include <SDL2/SDL_image.h>
 

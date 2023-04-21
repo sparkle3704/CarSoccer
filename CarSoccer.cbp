@@ -83,6 +83,8 @@
 		<Unit filename="SDL_Contexts.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="Screens.cpp" />
+		<Unit filename="Screens.h" />
 		<Unit filename="Sounds.cpp" />
 		<Unit filename="Sounds.h" />
 		<Unit filename="Stats.cpp" />
@@ -90,8 +92,6 @@
 		<Unit filename="Structs.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="TextElements.cpp" />
-		<Unit filename="TextElements.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />

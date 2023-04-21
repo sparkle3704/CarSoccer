@@ -1,5 +1,6 @@
 #ifndef SOUNDS_H_INCLUDED
 #define SOUNDS_H_INCLUDED
+#pragma once
 #include <SDL2/SDL_mixer.h>
 
 extern bool mute;

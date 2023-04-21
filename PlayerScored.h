@@ -1,7 +1,8 @@
 #ifndef PLAYERSCORED_H_INCLUDED
 #define PLAYERSCORED_H_INCLUDED
+#pragma once
 #include <string>
-
+#include "Ball.h"
 #include <SDl2/SDL.h>
 
 extern SDL_Texture* timeTexture;
@@ -10,6 +11,7 @@ extern SDL_Texture* scoreTextureA;
 extern SDL_Texture* scoreTextureB;
 extern int messageTextWidth[];
 extern int messageTextHeight[];
+extern bool displayingScored;
 
 extern SDL_Surface* surfaceMessage;
 
@@ -43,4 +45,12 @@ extern bool countDown;
 void displayTime();
 
 void displayScores();
+
+extern Uint64 currentInMidAir;
+extern Uint64 startInMidAir;
+extern SDL_Surface* inMidAirSurface;
+extern SDL_Texture* inMidAirTexture;
+
+void displayInMidAir(Ball& ball);
+
 #endif // PLAYERSCORED_H_INCLUDED

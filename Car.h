@@ -1,6 +1,6 @@
 #ifndef CAR_H_INCLUDED
 #define CAR_H_INCLUDED
-
+#pragma once
 #include <deque>
 #include <SDL2/SDL.h>
 #include "Structs.h"

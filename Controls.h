@@ -1,6 +1,6 @@
 #ifndef CONTROLS_H_INCLUDED
 #define CONTROLS_H_INCLUDED
-
+#pragma once
 #include <SDL2/SDL.h>
 extern std::string player2_prvLeftRight;
 extern std::string player1_prvLeftRight;
