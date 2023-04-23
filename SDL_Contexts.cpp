@@ -16,8 +16,8 @@ std::string player2_name = "Player 2";
 
 const std::string fontPath = "./assets/fonts/usethis/sans.ttf";
 
-SDL_Texture* backgroundTexture = nullptr;
-SDL_Texture* titleBackgroundTexture = nullptr;
+SDL_Texture* background_Texture = nullptr;
+SDL_Texture* titleBackground_Texture = nullptr;
 SDL_Texture* frontPart = nullptr;
 SDL_Texture* scoreBoard = nullptr;
 
@@ -32,7 +32,13 @@ SDL_Texture* optionsButton_Selected_Texture = nullptr;
 SDL_Texture* optionsButton_Unselected_Texture = nullptr;
 SDL_Texture* okButton_Selected_Texture = nullptr;
 SDL_Texture* okButton_Unselected_Texture = nullptr;
-SDL_Texture* optionsWindow = nullptr;
+SDL_Texture* tickButton_Selected_Texture = nullptr;
+SDL_Texture* tickButton_Unselected_Texture = nullptr;
+SDL_Texture* optionsWindow_Texture = nullptr;
+SDL_Texture* resumeButton_Selected_Texture = nullptr;
+SDL_Texture* resumeButton_Unselected_Texture = nullptr;
+SDL_Texture* menuButton_Selected_Texture = nullptr;
+SDL_Texture* menuButton_Unselected_Texture = nullptr;
 
 float maxPower = 0;
 
@@ -126,14 +132,14 @@ void TextField::displayText() {
 SDL_Rect dstRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }; // Set destination rectangle to cover entire window
 SDL_Rect srcRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }; // Example: render the entire texture
 
-bool loadedAllTextures = 1;
+bool loadedAll = 1;
 
 bool loadTexture(SDL_Texture*& texture, std::string path) {
     if (texture == nullptr) {
         texture = IMG_LoadTexture(renderer, path.c_str());
     }
     if (texture == nullptr) {
-        loadedAllTextures = 0;
+        loadedAll = 0;
         return 0;
     }
     return 1;
@@ -143,7 +149,7 @@ void displayBackground() {
     SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
     SDL_RenderClear(renderer);
 
-    SDL_RenderCopy(renderer, backgroundTexture, &srcRect, &dstRect); /// Background image
+    SDL_RenderCopy(renderer, background_Texture, &srcRect, &dstRect); /// Background image
     SDL_RenderCopy(renderer, scoreBoard, &srcRect, &dstRect); /// Scoreboard image
 }
 
@@ -151,11 +157,11 @@ void displayTitleBackground() {
     SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
     SDL_RenderClear(renderer);
 
-    SDL_RenderCopy(renderer, titleBackgroundTexture, &srcRect, &dstRect); /// titleBackground
+    SDL_RenderCopy(renderer, titleBackground_Texture, &srcRect, &dstRect); /// titleBackground
 }
 
-Gallery::Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected, std::string name, float centerX, float centerY):
-    texture(texture), texture_unselected(texture_unselected), name(name), centerX(centerX), centerY(y) {
+Gallery::Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected, std::string name, float centerX, float centerY, bool toggle, bool state):
+    texture(texture), texture_unselected(texture_unselected), name(name), centerX(centerX), centerY(y), toggle(toggle), state(state) {
         SDL_QueryTexture(texture, NULL, NULL, &width, &height);
         if (centerX == -1 && centerY == -1) {
             x = 0, y = 0;
@@ -187,51 +193,90 @@ void Gallery::displayImage(bool state) {
     }
 }
 
+bool loadSoundEffect(Mix_Chunk*& chunk, std::string path) {
+    if (chunk == nullptr) {
+        chunk = Mix_LoadWAV(path.c_str());
+    }
+    if (chunk == nullptr) {
+        loadedAll = 0;
+        return 0;
+    }
+    return 1;
+}
+
 TextField namePlayer[3];
-Gallery playButton, optionsButton, exitButton, okButton;
-std::vector<Gallery> mainButtons, optionsButtons;
+
 bool initTextures() {
-    loadTexture(backgroundTexture, "./assets/textures/usable_bg.png");
+    loadTexture(background_Texture, "./assets/textures/usable_bg.png");
     loadTexture(frontPart, "./assets/textures/front_part.png");
     loadTexture(scoreBoard, "./assets/textures/score2.png");
     loadTexture(car1_Texture, "./assets/textures/spr_casualcar_0.png");
     loadTexture(car2_Texture, "./assets/textures/car1_red.png");
     loadTexture(ballTexture, "./assets/textures/ggg.png");
-    loadTexture(titleBackgroundTexture, "./assets/textures/titlescreen.jpg");
+    loadTexture(titleBackground_Texture, "./assets/textures/titlescreen.jpg");
+    loadTexture(optionsWindow_Texture, "./assets/textures/optionswindow.png");
 
     loadTexture(playButton_Selected_Texture, "./assets/textures/play_selected.png");
     loadTexture(playButton_Unselected_Texture, "./assets/textures/play_unselected.png");
-    playButton = Gallery(playButton_Selected_Texture, playButton_Unselected_Texture, "play", 960, 830 - 200);
+
 
     loadTexture(optionsButton_Selected_Texture, "./assets/textures/options_selected.png");
     loadTexture(optionsButton_Unselected_Texture, "./assets/textures/options_unselected.png");
-    optionsButton = Gallery(optionsButton_Selected_Texture, optionsButton_Unselected_Texture, "options", 960, 980 - 200);
+
 
     loadTexture(exitButton_Selected_Texture, "./assets/textures/exit_selected.png");
     loadTexture(exitButton_Unselected_Texture, "./assets/textures/exit_unselected.png");
-    exitButton = Gallery(exitButton_Selected_Texture, exitButton_Unselected_Texture, "exit", 960, 1130 - 200);
+
 
     loadTexture(okButton_Selected_Texture, "./assets/textures/ok_selected.png");
     loadTexture(okButton_Unselected_Texture, "./assets/textures/ok_unselected.png");
-    okButton = Gallery(okButton_Selected_Texture, okButton_Unselected_Texture, "ok", 960, 786);
-
-    loadTexture(optionsWindow, "./assets/textures/optionswindow.png");
-
-    explosionSound = Mix_LoadWAV("./assets/audio/test.wav");
-    ballHitSound = Mix_LoadWAV("./assets/audio/ballhitsound.wav");
-    boostStartSound = Mix_LoadWAV("./assets/audio/booststart.wav");
-    boostEndSound = Mix_LoadWAV("./assets/audio/boostend.wav");
 
 
-    mainButtons = {playButton, optionsButton, exitButton};
-    optionsButtons = {okButton};
+    loadTexture(tickButton_Selected_Texture, "./assets/textures/tick_selected.png");
+    loadTexture(tickButton_Unselected_Texture, "./assets/textures/tick_unselected.png");
 
+    loadTexture(resumeButton_Selected_Texture, "./assets/textures/resume_selected.png");
+    loadTexture(resumeButton_Unselected_Texture, "./assets/textures/resume_unselected.png");
+
+    loadTexture(menuButton_Selected_Texture, "./assets/textures/menu_selected.png");
+    loadTexture(menuButton_Unselected_Texture, "./assets/textures/menu_unselected.png");
+
+    loadSoundEffect(explosionSound, "./assets/audio/test.wav");
+    loadSoundEffect(ballHitSound, "./assets/audio/ballhitsound.wav");
+    loadSoundEffect(boostStartSound, "./assets/audio/booststart.wav");
+    loadSoundEffect(boostEndSound, "./assets/audio/boostend.wav");
+
+    return loadedAll;
+}
+std::vector<Gallery> titleButtons, pausedButtons, optionsButtons;
+Gallery playButton, optionsButton, exitButton, okButton, unlTimeButton, noGroundButton, sfxButton, musicButton, resumeButton, options2Button, menuButton;
+
+void initButtons() {
+    playButton = Gallery(playButton_Selected_Texture, playButton_Unselected_Texture, "play", 960, 830 - 200);
+    optionsButton = Gallery(optionsButton_Selected_Texture, optionsButton_Unselected_Texture, "options", 960, 980 - 200);
+    exitButton = Gallery(exitButton_Selected_Texture, exitButton_Unselected_Texture, "exit", 960, 1130 - 200);
+    okButton = Gallery(okButton_Selected_Texture, okButton_Unselected_Texture, "ok", 960, 840); /// 786
+
+    unlTimeButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "unltime", 864, 676, 1, 1);
+    noGroundButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "noground", 864, 716, 1, 0);
+    sfxButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "sfx", 1226, 676, 1, 1);
+    musicButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "music", 1226, 716, 1, 1);
+
+    resumeButton = Gallery(resumeButton_Selected_Texture, resumeButton_Unselected_Texture, "resume", 960, 540 - 150);
+    options2Button = Gallery(optionsButton_Selected_Texture, optionsButton_Unselected_Texture, "options", 960, 540);
+    menuButton = Gallery(menuButton_Selected_Texture, menuButton_Unselected_Texture, "menu", 960, 540 + 150);
+
+    titleButtons = {playButton, optionsButton, exitButton};
+
+    optionsButtons = {okButton, unlTimeButton, noGroundButton, sfxButton, musicButton};
+
+    pausedButtons = {resumeButton, options2Button, menuButton};
+
+
+    ///
     namePlayer[1] = TextField("Player 1", 30, WHITE, 690, 375, 0, {685, 347}, {1234, 404});
     namePlayer[2] = TextField("Player 2", 30, WHITE, 690, 588, 0, {685, 560}, {1234, 617});
-
-    return loadedAllTextures;
 }
-
 
 bool Gallery::withinArea(int mouseX, int mouseY) {
     float minX = x;
@@ -241,28 +286,6 @@ bool Gallery::withinArea(int mouseX, int mouseY) {
 
     return (minX <= mouseX && mouseX <= maxX && minY <= mouseY && mouseY <= maxY);
 }
-
-//void displayText(string& text, SDL_Texture*& textTexture, SDL_Surface*& textSurface, float x, float y, bool middle, int fontSize) {
-//    Font = TTF_OpenFont(fontPath.c_str(), fontSize); ///
-//    textSurface = TTF_RenderText_Blended(Font, text.c_str(), { 255, 255, 255 }); ///
-//    Font = nullptr; ///
-//    TTF_CloseFont(Font); ///
-//
-//    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface); ///
-//
-//    int text_width = textSurface->w; ///
-//    int text_height = textSurface->h; ///
-//
-//    SDL_FRect rect;
-//    if (middle) {
-//        rect = {x - text_width/ 2, y - text_height/ 2, text_width, text_height};
-//    }
-//    else {
-//        rect = {x, y, text_width, text_height};
-//    }
-//
-//    SDL_RenderCopy(renderer, textTexture, NULL, &rect);
-//}
 
 void displayImage(SDL_Texture* texture, float x, float y, float percent) {
     int width, height;
@@ -327,6 +350,8 @@ bool initEverything() {
     if (initTextures() == 0) {
         return 0;
     }
+
+    initButtons();
     screenSurface = SDL_GetWindowSurface(window);
     return 1;
 }

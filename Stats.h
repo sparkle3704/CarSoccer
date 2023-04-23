@@ -17,5 +17,6 @@ extern void handleCollisions(Car& car1, Car& car2, Ball& ball);
 
 extern void Render(Car& car1, Car& car2, Ball& ball);
 
+extern void reset();
 
 #endif // STATS_H_INCLUDED

@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1682057697 source:d:\gameproject\carsoccer\ball.cpp
+1682260502 source:d:\gameproject\carsoccer\ball.cpp
 	"Ball.h"
 	<vector>
 	<SDL2/SDL.h>
@@ -14,7 +14,7 @@
 	"PlayerScored.h"
 	"Stats.h"
 
-1682055369 d:\gameproject\carsoccer\ball.h
+1682259304 d:\gameproject\carsoccer\ball.h
 	<deque>
 	<SDL2/SDL.h>
 	"Structs.h"
@@ -421,7 +421,7 @@
 	<array>
 	<SDL2/SDL.h>
 
-1682105246 d:\gameproject\carsoccer\sdl_contexts.h
+1682253872 d:\gameproject\carsoccer\sdl_contexts.h
 	<SDL2/SDL.h>
 	<SDL2/SDL_image.h>
 	<SDL2/SDL_ttf.h>
@@ -460,11 +460,11 @@
 	"Ball.h"
 	<SDl2/SDL.h>
 
-1682053845 d:\gameproject\carsoccer\stats.h
+1682255599 d:\gameproject\carsoccer\stats.h
 	"Car.h"
 	"Ball.h"
 
-1682055370 d:\gameproject\carsoccer\car.h
+1682256038 d:\gameproject\carsoccer\car.h
 	<deque>
 	<SDL2/SDL.h>
 	"Structs.h"
@@ -486,7 +486,7 @@
 	"Structs.h"
 	<SDL2/SDL_image.h>
 
-1682006062 source:d:\gameproject\carsoccer\car.cpp
+1682256485 source:d:\gameproject\carsoccer\car.cpp
 	"SDL_Contexts.h"
 	"Car.h"
 	"Constants.h"
@@ -525,11 +525,11 @@
 1681929972 source:d:\gameproject\carsoccer\constants.cpp
 	"Constants.h"
 
-1681976250 source:d:\gameproject\carsoccer\controls.cpp
+1682190703 source:d:\gameproject\carsoccer\controls.cpp
 	<string>
 	"Controls.h"
 
-1682053845 d:\gameproject\carsoccer\controls.h
+1682238108 d:\gameproject\carsoccer\controls.h
 	<SDL2/SDL.h>
 
 1681926298 source:d:\gameproject\carsoccer\explosion.cpp
@@ -541,7 +541,7 @@
 	<algorithm>
 	<array>
 
-1682087803 source:d:\gameproject\carsoccer\main.cpp
+1682237912 source:d:\gameproject\carsoccer\main.cpp
 	<iostream>
 	"SDL_Contexts.h"
 	"Constants.h"
@@ -555,7 +555,7 @@
 	"Controls.h"
 	"Screens.h"
 
-1682075363 source:d:\gameproject\carsoccer\playerscored.cpp
+1682260116 source:d:\gameproject\carsoccer\playerscored.cpp
 	"PlayerScored.h"
 	<SDl2/SDL.h>
 	<string>
@@ -565,7 +565,7 @@
 	"Stats.h"
 	"Ball.h"
 
-1682104485 source:d:\gameproject\carsoccer\sdl_contexts.cpp
+1682254301 source:d:\gameproject\carsoccer\sdl_contexts.cpp
 	<SDL2/SDL.h>
 	<SDL2/SDL_image.h>
 	<SDL2/SDL_ttf.h>
@@ -582,19 +582,21 @@
 1682007147 source:d:\gameproject\carsoccer\sounds.cpp
 	"Sounds.h"
 
-1681999303 source:d:\gameproject\carsoccer\stats.cpp
+1682256625 source:d:\gameproject\carsoccer\stats.cpp
 	"Stats.h"
 	"Ball.h"
 	"Car.h"
 	"CarBallCollisionHandler.h"
+	"Controls.h"
+	"PlayerScored.h"
 
 1681981335 source:d:\gameproject\carsoccer\textelements.cpp
 
-1682098591 d:\gameproject\carsoccer\screens.h
+1682257615 d:\gameproject\carsoccer\screens.h
 	<SDL2/SDL.h>
 	<iostream>
 
-1682104630 source:d:\gameproject\carsoccer\screens.cpp
+1682259304 source:d:\gameproject\carsoccer\screens.cpp
 	"Screens.h"
 	<SDL2/SDL.h>
 	"Car.h"
@@ -604,4 +606,5 @@
 	"PlayerScored.h"
 	"SDL_Contexts.h"
 	<vector>
+	"Stats.h"
 

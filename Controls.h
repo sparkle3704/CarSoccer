@@ -19,6 +19,7 @@ extern SDL_Keycode player1_sym_left;
 extern SDL_Keycode player1_sym_right;
 extern SDL_Keycode player1_sym_boost;
 extern SDL_Keycode player1_sym_jump;
+extern SDL_Keycode player1_sym_pause;
 ///
 
 /// player2 controls
@@ -35,6 +36,7 @@ extern SDL_Keycode player2_sym_left;
 extern SDL_Keycode player2_sym_right;
 extern SDL_Keycode player2_sym_boost;
 extern SDL_Keycode player2_sym_jump;
+extern SDL_Keycode player2_sym_pause;
 ///
 
 extern bool enable_player2;

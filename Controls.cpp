@@ -18,6 +18,9 @@ SDL_Keycode player1_sym_left = SDLK_a;
 SDL_Keycode player1_sym_right = SDLK_d;
 SDL_Keycode player1_sym_boost = SDLK_g;
 SDL_Keycode player1_sym_jump = SDLK_h;
+SDL_Keycode player1_sym_pause = SDLK_ESCAPE;
+
+
 ///
 
 /// player2 controls
@@ -34,6 +37,7 @@ SDL_Keycode player2_sym_left = SDLK_LEFT;
 SDL_Keycode player2_sym_right = SDLK_RIGHT;
 SDL_Keycode player2_sym_boost = SDLK_RIGHTBRACKET;
 SDL_Keycode player2_sym_jump = SDLK_BACKSLASH;
+SDL_Keycode player2_sym_pause = SDLK_ESCAPE;
 ///
 
 bool enable_player2 = 1; // red

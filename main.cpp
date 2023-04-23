@@ -15,22 +15,18 @@ int main(int argc, char* argv[]) {
     if (!initEverything()) {
         return 1;
     }
-
-    mute = 1;
     createCars();
     createBall();
-    std::cerr << "hello" << "\n";
-
 
     while (isRunning) {
         switch (currentState) {
             case TITLE_SCREEN:
                 std::cerr << "titleScreen" << "\n";
-                handleTitleScreen();
+                titleScreen.handle();
                 break;
             case GAMEPLAY:
                 std::cerr << "gameplay" << "\n";
-                handleGameplay();
+                gameplay.handle();
                 break;
             case EXIT:
                 isRunning = 0;

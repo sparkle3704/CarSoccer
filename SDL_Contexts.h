@@ -9,6 +9,7 @@
 #include "Screens.h"
 #include "Structs.h"
 
+extern bool mute;
 extern SDL_Color ORANGE;
 extern SDL_Color BLUE;
 extern SDL_Color RED;
@@ -20,7 +21,7 @@ extern SDL_Color BLACK;
 class Gallery {
 public:
     Gallery() {}
-    Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected = nullptr, std::string name = "", float centerX = -1, float centerY = -1);
+    Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected = nullptr, std::string name = "", float centerX = -1, float centerY = -1, bool toggle = 0, bool state = 1);
 
     gameState nextState;
     SDL_Texture* texture;
@@ -31,7 +32,7 @@ public:
     float x, y;
     float centerX, centerY;
     bool state;
-
+    bool toggle;
     void displayImage(bool state = 1);
 
     bool withinArea(int mouseX, int mouseY);
@@ -59,16 +60,16 @@ public:
     bool withinNameField(int mouseX, int mouseY);
 };
 
-extern std::vector<Gallery> mainButtons, optionsButtons;
+extern std::vector<Gallery> titleButtons, optionsButtons, pausedButtons;
 extern TextField namePlayer[3];
 
-extern SDL_Texture* optionsWindow;
+extern SDL_Texture* optionsWindow_Texture;
 extern std::string player1_name;
 extern std::string player2_name;
 extern std::string inMidAirText;
 extern const std::string fontPath;
 
-extern SDL_Texture* backgroundTexture;
+extern SDL_Texture* background_Texture;
 extern SDL_Texture* frontPart;
 extern SDL_Texture* scoreBoard;
 
@@ -76,7 +77,7 @@ extern SDL_Texture* car1_Texture;
 extern SDL_Texture* car2_Texture;
 extern SDL_Texture* ballTexture;
 
-extern SDL_Texture* titleBackgroundTexture;
+extern SDL_Texture* titleBackground_Texture;
 extern float maxPower;
 
 extern SDL_Renderer* renderer;
@@ -95,6 +96,12 @@ extern SDL_Texture* optionsButton_Selected_Texture;
 extern SDL_Texture* optionsButton_Unselected_Texture;
 extern SDL_Texture* okButton_Selected_Texture;
 extern SDL_Texture* okButton_Unselected_Texture;
+extern SDL_Texture* tickButton_Selected_Texture;
+extern SDL_Texture* tickButton_Unselected_Texture;
+extern SDL_Texture* resumeButton_Selected_Texture;
+extern SDL_Texture* resumeButton_Unselected_Texture;
+extern SDL_Texture* menuButton_Selected_Texture;
+extern SDL_Texture* menuButton_Unselected_Texture;
 
 extern void displayTitleBackground();
 extern void toUpper(std::string& s);

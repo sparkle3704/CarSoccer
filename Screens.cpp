@@ -7,10 +7,18 @@
 #include "PlayerScored.h"
 #include "SDL_Contexts.h"
 #include <vector>
+#include "Stats.h"
 
 bool isRunning = 1;
-
 gameState currentState = TITLE_SCREEN;
+
+TitleScreenInstance titleScreen;
+GameplayInstance gameplay;
+optionsWindowInstance optionsWindow;
+bool showingOptions = 0;
+bool isTyping, clicked;
+int mouseX, mouseY;
+SDL_Event event;
 
 int withinNameField(int mouseX, int mouseY) {
     if (namePlayer[1].withinNameField(mouseX, mouseY)) {
@@ -22,18 +30,39 @@ int withinNameField(int mouseX, int mouseY) {
     return 0;
 }
 
-int nameFieldIndex = 0;
 
+void TitleScreenInstance::init() {
+    isTyping = 0;
+    onTitleScreen = 1;
+    showingOptions = 0;
+    clicked = 0;
+}
 
-void handleTitleScreen() {
-    bool isTyping = false;
-    int mouseX, mouseY;
-    bool onTitleScreen = 1;
-    bool showingOptions = 0;
+void TitleScreenInstance::handleButtons() {
+    for (auto& button: titleButtons) {
+        if (button.withinArea(mouseX, mouseY)) {
+            button.displayImage(1);
+            if (clicked) {
+                if (button.name != "options") {
+                    currentState = button.nextState;
+                    onTitleScreen = 0;
+                    break;
+                }
+                else {
+                    showingOptions = 1;
+                }
+            }
+        }
+        else {
+            button.displayImage(0);
+        }
+    }
+}
+
+void TitleScreenInstance::handle() {
+    init();
     while (onTitleScreen) {
-
-        SDL_Event event;
-        bool clicked = 0;
+        clicked = 0;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 onTitleScreen = 0;
@@ -41,28 +70,12 @@ void handleTitleScreen() {
             }
             SDL_GetMouseState(&mouseX, &mouseY);
 
+            if (showingOptions) {
+                optionsWindow.handleEvent();
+            }
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     clicked = 1;
-                    if (showingOptions) {
-                        isTyping = true;
-                        SDL_StartTextInput();
-                        nameFieldIndex = withinNameField(mouseX, mouseY);
-                        std::cerr << nameFieldIndex << "\n";
-                    }
-
-                }
-            } else if (event.type == SDL_TEXTINPUT && isTyping && showingOptions) {
-                if (namePlayer[nameFieldIndex].width < namePlayer[nameFieldIndex].maxWidth/2) {
-                    namePlayer[nameFieldIndex].content += event.text.text;
-                }
-
-            } else if (event.type == SDL_KEYDOWN && isTyping && showingOptions) {
-                if (event.key.keysym.sym == SDLK_RETURN) {
-                    isTyping = false;
-                    SDL_StopTextInput();
-                } else if (event.key.keysym.sym == SDLK_BACKSPACE && !namePlayer[nameFieldIndex].content.empty()) {
-                    namePlayer[nameFieldIndex].content.pop_back();
                 }
             }
         }
@@ -70,69 +83,44 @@ void handleTitleScreen() {
         SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
         SDL_RenderClear(renderer);
 
-        displayImage(titleBackgroundTexture);
+        displayImage(titleBackground_Texture);
 
-//
-//        displayImage(play_Selected, 960, 830 - 200);
-//        displayImage(play_Selected, 960, 980 - 200);
-//        displayImage(play_Selected, 960, 1130 - 200);
         if (showingOptions == 0) {
-            for (auto& button: mainButtons) {
-                if (button.withinArea(mouseX, mouseY)) {
-                    button.displayImage(1);
-                    if (clicked) {
-                        if (button.name != "options") {
-                            currentState = button.nextState;
-                            onTitleScreen = 0;
-                            break;
-                        }
-                        else {
-                            showingOptions = 1;
-                            std::cerr << "showing Option" << "\n";
-                        }
-                    }
-                }
-                else {
-                    button.displayImage(0);
-                }
-            }
+            handleButtons();
         }
         else {
-            displayImage(optionsWindow, -2, -2);
-            if (nameFieldIndex == 1) {
-                namePlayer[1].content += "|";
-            }
-            else if (nameFieldIndex == 2){
-                namePlayer[2].content += "|";
-            }
-
-            namePlayer[1].displayText();
-            namePlayer[2].displayText();
-
-            if (nameFieldIndex == 1) {
-                namePlayer[1].content.pop_back();
-            }
-            else if (nameFieldIndex == 2){
-                namePlayer[2].content.pop_back();
-            }
-
-            for (auto& button: optionsButtons) {
-                if (button.withinArea(mouseX, mouseY)) {
-                    button.displayImage(1);
-                    if (clicked) {
-                        if (button.name == "ok") {
-                            showingOptions = 0;
-                        }
-                    }
-                }
-                else {
-                    button.displayImage(0);
-                }
-            }
+            optionsWindow.handleButtons();
         }
+
         SDL_RenderPresent(renderer);
     }
+}
 
+void optionsWindowInstance::handleEvent() {
+    SDL_GetMouseState(&mouseX, &mouseY);
+    if (event.type == SDL_MOUSEBUTTONDOWN) {
+        if (event.button.button == SDL_BUTTON_LEFT) {
+            clicked = 1;
+            isTyping = 1;
+            SDL_StartTextInput();
+            nameFieldIndex = withinNameField(mouseX, mouseY);
+        }
+    } else if (event.type == SDL_TEXTINPUT && isTyping) {
+        if (nameFieldIndex != 0 && namePlayer[nameFieldIndex].width < namePlayer[nameFieldIndex].maxWidth/2) {
+            namePlayer[nameFieldIndex].content += event.text.text;
+        }
+
+    } else if (event.type == SDL_KEYDOWN && isTyping) {
+        if (event.key.keysym.sym == SDLK_RETURN) {
+            isTyping = 0;
+            SDL_StopTextInput();
+        } else if (nameFieldIndex != 0 && event.key.keysym.sym == SDLK_BACKSPACE && !namePlayer[nameFieldIndex].content.empty()) {
+            namePlayer[nameFieldIndex].content.pop_back();
+        }
+    }
+}
+
+void optionsWindowInstance::setNames() {
     player1_name = namePlayer[1].content;
     player2_name = namePlayer[2].content;
 
@@ -146,18 +134,183 @@ void handleTitleScreen() {
     toUpper(player2_name);
 }
 
-//void midGameESC() {
-//
-//}
 
-void handleGameplay() {
-    bool onGameplay = true;
+void optionsWindowInstance::handleButtons() {
+    displayImage(optionsWindow_Texture, -2, -2);
+    if (nameFieldIndex == 1) {
+        namePlayer[1].content += "|";
+    }
+    else if (nameFieldIndex == 2){
+        namePlayer[2].content += "|";
+    }
+
+    namePlayer[1].displayText();
+    namePlayer[2].displayText();
+
+    if (nameFieldIndex == 1) {
+        namePlayer[1].content.pop_back();
+    }
+    else if (nameFieldIndex == 2){
+        namePlayer[2].content.pop_back();
+    }
+    for (auto& button: optionsButtons) {
+        if (button.withinArea(mouseX, mouseY)) {
+            if (button.toggle == 1) {
+                button.displayImage(button.state);
+                if (clicked) {
+                    button.state = !button.state;
+                    if (button.name == "unltime") {
+                        countDown = button.state;
+                    }
+                    else if (button.name == "sfx") {
+                        mute = !button.state;
+                    }
+                    else if (button.name == "music") {
+                        ///
+                    }
+                    else if (button.name == "noground") {
+                        ///
+                        noGroundMode = button.state;
+                    }
+                }
+            }
+            else {
+                button.displayImage(1);
+                if (clicked) {
+                    if (button.name == "ok") {
+                        showingOptions = 0;
+                    }
+                }
+            }
+        }
+        else {
+            if (button.toggle == 0) {
+                button.displayImage(0);
+            }
+            else {
+                button.displayImage(button.state);
+            }
+        }
+    }
+    setNames();
+}
+
+void GameplayInstance::init() {
+    isTyping = 0;
+    onGameplay = 1;
+    showingOptions = 0;
+    clicked = 0;
+}
+
+void GameplayInstance::handlePausedButtons() {
+    SDL_GetMouseState(&mouseX, &mouseY);
+//    std::cerr << mouseX << " " << mouseY << "\n";
+    for (auto& button: pausedButtons) {
+        if (button.withinArea(mouseX, mouseY)) {
+            button.displayImage(1);
+            if (clicked) {
+                std::cerr << "HERE< CLLICKED" << "\n";
+                if (button.name == "options") {
+                    showingOptions = 1;
+                    showingPausedMenu = 0;
+                    break;
+                }
+                else if (button.name == "menu") {
+                    currentState = TITLE_SCREEN;
+                    showingOptions = 0;
+                    showingPausedMenu = 0;
+                    onGameplay = 0;
+                    break;
+                }
+                else if (button.name == "resume") {
+                    showingOptions = 0;
+                    showingPausedMenu = 0;
+                }
+            }
+        }
+        else {
+            button.displayImage(0);
+        }
+    }
+}
+
+void GameplayInstance::handle() {
+    init();
+    reset();
     while (onGameplay) {
-        SDL_Event event;
         const Uint8* state = SDL_GetKeyboardState(NULL);
+        clicked = 0;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                onGameplay = 0;
+                break;
+            }
+            else {
+                if ((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == player1_sym_pause || event.key.keysym.sym == player2_sym_pause)) {
+                    if (showingPausedMenu == 0) {
+                        if (showingOptions == 1) {
+                            showingOptions = 0;
+                            showingPausedMenu = 1;
+                        }
+                        else {
+                            showingPausedMenu = 1;
+                        }
+                    }
+                    else {
+                        showingPausedMenu = 0;
+                        showingOptions = 0;
+                    }
+                }
+                if (showingPausedMenu == 1) {
+                    handlePausedButtons();
+                }
+                else if (showingOptions == 1) {
+                    optionsWindow.handleEvent();
+                }
+                else {
+                    if (event.type == SDL_KEYDOWN) {
+                        if (event.key.keysym.sym == player2_sym_jump) { // jump
+                            car2.jump();
+                            car2.canJump = 0;
+                            if  (state[SDL_SCANCODE_DOWN]) {
+
+                                car2.dodgeUp();
+                            }
+                            if (state[SDL_SCANCODE_UP]) {
+                                car2.dodgeDown();
+                            }
+                        }
+
+                        if (event.key.keysym.sym == player1_sym_jump) { // jump
+                            car1.jump();
+                            car1.canJump = 0;
+                            if (state[player1_scancode_down]) {
+                                car1.dodgeUp();
+                            }
+                            if (state[player1_scancode_up]) {
+                                car1.dodgeDown();
+                            }
+                        }
+                    }
+                    else if (event.type == SDL_KEYUP) {
+                        if (event.key.keysym.sym == player2_sym_jump) {
+                            car2.canJump = 1;
+                        }
+                        if (event.key.keysym.sym == player1_sym_jump) {
+                            car1.canJump = 1;
+                        }
+                    }
+                }
+                if (event.type == SDL_MOUSEBUTTONDOWN) {
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        clicked = 1;
+                    }
+                }
+            }
+        }
 
         /// player2
-        if (enable_player2) {
+        if (enable_player2 && (showingOptions == 0 && showingPausedMenu == 0)) {
             std::string player2_stateLeft = (state[player2_scancode_left] ? "1" : "0");
             std::string player2_stateRight = (state[player2_scancode_right] ? "1" : "0");
             std::string player2_curLeftRight = player2_stateLeft + player2_stateRight;
@@ -185,46 +338,6 @@ void handleGameplay() {
                 }
             }
 
-            while (SDL_PollEvent(&event)) {
-                switch (event.type) {
-                    case SDL_QUIT:
-                        onGameplay = false;
-                        break;
-                    case SDL_KEYDOWN:
-                        if (event.key.keysym.sym == player2_sym_jump) { // jump
-                            car2.jump();
-                            car2.canJump = 0;
-                            if (state[SDL_SCANCODE_DOWN]) {
-
-                                car2.dodgeUp();
-                            }
-                            if (state[SDL_SCANCODE_UP]) {
-                                car2.dodgeDown();
-                            }
-                        }
-
-                        if (event.key.keysym.sym == player1_sym_jump) { // jump
-                            car1.jump();
-                            car1.canJump = 0;
-                            if (state[player1_scancode_down]) {
-                                car1.dodgeUp();
-                            }
-                            if (state[player1_scancode_up]) {
-                                car1.dodgeDown();
-                            }
-                        }
-
-                        break;
-                    case SDL_KEYUP:
-                        if (event.key.keysym.sym == player2_sym_jump) {
-                            car2.canJump = 1;
-                        }
-                        if (event.key.keysym.sym == player1_sym_jump) {
-                            car1.canJump = 1;
-                        }
-                }
-            }
-
             if (player2_curLeftRight == "10" || player2_curLeftRight == "01") {
                 player2_prvLeftRight = player2_curLeftRight;
             }
@@ -247,7 +360,7 @@ void handleGameplay() {
         }
 
         /// player1
-        if (enable_player1) {
+        if (enable_player1 && (showingOptions == 0 && showingPausedMenu == 0)) {
             std::string player1_stateLeft = (state[player1_scancode_left] ? "1" : "0");
             std::string player1_stateRight = (state[player1_scancode_right] ? "1" : "0");
             std::string player1_curLeftRight = player1_stateLeft + player1_stateRight;
@@ -275,31 +388,6 @@ void handleGameplay() {
                 }
             }
 
-            while (SDL_PollEvent(&event)) {
-                switch (event.type) {
-                    case SDL_QUIT:
-                        onGameplay = false;
-                        break;
-                    case SDL_KEYDOWN:
-                        if (event.key.keysym.sym == player1_sym_jump) { // jump
-                            std::cerr << "player1 hit jump" << "\n";
-                            car1.jump();
-                            car1.canJump = 0;
-                            if (state[player1_scancode_down]) {
-                                car1.dodgeUp();
-                            }
-                            if (state[player1_scancode_up]) {
-                                car1.dodgeDown();
-                            }
-                        }
-                        break;
-                    case SDL_KEYUP:
-                        if (event.key.keysym.sym == player1_sym_jump) {
-                            car1.canJump = 1;
-                        }
-                }
-            }
-
             if (player1_curLeftRight == "10" || player1_curLeftRight == "01") {
                 player1_prvLeftRight = player1_curLeftRight;
             }
@@ -320,8 +408,6 @@ void handleGameplay() {
                 car1.boost(-1.0);
             }
         }
-        ///
-
         displayBackground();
 
         updateStates(car1, car2, ball);
@@ -331,6 +417,16 @@ void handleGameplay() {
         displayScores();
         displayTime();
         displayInMidAir(ball);
+
+        if (showingPausedMenu) {
+            handlePausedButtons();
+        }
+        else if (showingOptions) {
+            optionsWindow.handleButtons();
+            if (showingOptions == 0) {
+                showingPausedMenu = 1;
+            }
+        }
         SDL_RenderPresent(renderer);
     }
 }

@@ -14,7 +14,6 @@ public:
     bool canJump = 1;
     float prvSign = -1, curSign;
     bool prvDir = 0, curDir;
-    bool dir;
 
     float xPos;
     float yPos;
@@ -39,6 +38,7 @@ public:
     void moveCar();
     void draw();
     void handleGroundCollision();
+    void resetCar();
 
 private:
     float accelerationX = 0;

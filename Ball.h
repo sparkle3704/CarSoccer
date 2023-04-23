@@ -21,6 +21,7 @@ public:
 
     void moveBall();
     void draw();
+    void resetBall();
 
 private:
     float accelerationX = 0;
@@ -40,6 +41,7 @@ private:
     float prvXpos;
     float prvYpos;
 
+    int droppedOn = 0;
     std::deque<SDL_FPoint> centerBuffer;
 
     void draw(SDL_Renderer* renderer);
@@ -64,8 +66,6 @@ private:
 
     bool touchCeilBackGoal2();
 
-    void resetBall();
-
     vec2 getIntersection(vec2 A, vec2 B, vec2 P);
 
     int orientation(vec2 p1, vec2 p2, vec2 p3);
@@ -74,6 +74,7 @@ private:
 
 };
 
+extern bool noGroundMode;
 extern void createBall();
 extern Ball ball;
 

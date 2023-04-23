@@ -12,6 +12,7 @@
 #include "PlayerScored.h"
 #include "Stats.h"
 
+bool noGroundMode = 0;
 Ball ball(0, 0, 0);
 Ball::Ball(float xPos, float yPos, float radius):
     xPos(xPos), yPos(yPos), radius(radius) {
@@ -20,6 +21,7 @@ Ball::Ball(float xPos, float yPos, float radius):
         return;
     }
 
+    resetBall();
     prvXpos = xPos;
     prvYpos = yPos;
 }
@@ -156,13 +158,14 @@ bool Ball::touchCeilBackGoal2() {
 }
 
 void Ball::resetBall() {
-    xPos = WINDOW_WIDTH / 2 - radius;
-    yPos = groundY - radius - 100;
+    xPos = WINDOW_WIDTH*0.5 - radius;
+    yPos = WINDOW_HEIGHT*0.5 - radius;
     velocityX = 0;
     velocityY = 0;
     accelerationX = 0;
     accelerationY = 0;
     omega = 0;
+    droppedOn = 0;
 }
 
 vec2 Ball::getIntersection(vec2 A, vec2 B, vec2 P) {
@@ -320,14 +323,33 @@ void Ball::moveBall() {
                 velocityX *= -RESTITUTION;
                 playEffectOnce(ballHitSound, ballHitChannel);
             }
-            if (yPos + 2*radius > groundY) { /// down
-                yPos = groundY - 2*radius;
-                velocityY *= -RESTITUTION*2;
-                restitution = -RESTITUTION;
-                if (abs(velocityY) > 0.16) {
-                    playEffectOnce(ballHitSound, ballHitChannel);
+
+            if (noGroundMode) {
+                if (yPos > WINDOW_HEIGHT) {
+                    if (xPos + radius > WINDOW_WIDTH*0.5) {
+                        droppedOn = 2;
+                        scoreB += 1;
+                    }
+                    else if (xPos + radius < WINDOW_WIDTH*0.5) {
+                        droppedOn = 1;
+                        scoreA += 1;
+                    }
+                    else {
+                        droppedOn = 0;
+                    }
+                    resetBall();
                 }
-                inMidAir = 0;
+            }
+            else {
+                if (yPos + 2*radius > groundY) { /// down
+                    yPos = groundY - 2*radius;
+                    velocityY *= -RESTITUTION*2;
+                    restitution = -RESTITUTION;
+                    if (abs(velocityY) > 0.16) {
+                        playEffectOnce(ballHitSound, ballHitChannel);
+                    }
+                    inMidAir = 0;
+                }
             }
             if (yPos < 0) { /// up
                 restitution = RESTITUTION;

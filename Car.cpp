@@ -20,19 +20,6 @@ Car::Car(float xPos, float yPos, int player):
         return;
     }
 
-    if (player == 1) {
-        angle = 180;
-        pointing = 1;
-        clockWise = 1;
-        dir = 1;
-    }
-    else {
-        angle = 0;
-        pointing = 0;
-        clockWise = 0;
-        dir = 0;
-    }
-
     initTextures();
 
     if (car1_Texture == nullptr) {
@@ -49,6 +36,77 @@ Car::Car(float xPos, float yPos, int player):
     SDL_QueryTexture(carTexture, NULL, NULL, &w, &h);
     float scale = width / float(w);
     height = float(h) * scale;
+
+    if (player == 1) {
+        angle = 180;
+        pointing = 1;
+        clockWise = 1;
+        curDir = 1;
+    }
+    else {
+        angle = 0;
+        pointing = 0;
+        clockWise = 0;
+        curDir = 0;
+    }
+    xPos -= width*0.5;
+}
+void Car::resetCar() {
+
+    if (player == 1) {
+        angle = 180;
+        pointing = 1;
+        clockWise = 1;
+        curDir = prvDir = 1;
+        xPos = WINDOW_WIDTH/2 - 300 - width*0.5;
+        yPos = groundY - 32;
+    }
+    else {
+        angle = 0;
+        pointing = 0;
+        clockWise = 0;
+        curDir = prvDir = 0;
+        xPos = WINDOW_WIDTH/2 + 300 - width*0.5;
+        yPos = groundY - 32;
+    }
+    curSign = prvSign = -1;
+    goingVelocityX = 0;
+
+    velocityX = 0;
+    velocityY = 0;
+
+    accelerationX = 0;
+    accelerationY = 0;
+    onGround = 1;
+    jumping = 0;
+
+    gravityVelocityY = 0;
+    jumpVelocityX = 0;
+    jumpVelocityY = 0;
+    initialJumpDragAccelerationX = 0;
+    initialJumpDragAccelerationY = 0;
+    initialGravityAccelerationY = 0;
+    boostVelocityX = 0;
+    boostVelocityY = 0;
+    boostVelocity = 0;
+    initialBoostAccelerationX = 0;
+    initialBoostAccelerationY = 0;
+    spinningClockWise = 0;
+    spinnedClockWise = 0;
+    spinningCounterClockWise = 0;
+    spinnedCounterClockWise = 0;
+    dodgeVelocityX = 0;
+    dodgeVelocityY = 0;
+    dodgingDown = 0;
+    dodgingUp = 0;
+
+    carBallCollisionVelocityX = 0;
+    carBallCollisionVelocityY = 0;
+    carBallCollisionDragAccelerationX = 0;
+    carBallCollisionDragAccelerationY = 0;
+
+    dodgeDragAccelerationX = 0;
+    dodgeDragAccelerationY = 0;
 }
 
 void createCars() {
@@ -123,18 +181,18 @@ void Car::correctAngle() {
     }
     if ((angle >= 0 && angle <= 90) || (angle >= 270 && angle <= 359)) {
 //            flip = SDL_FLIP_NONE;
-//            dir = 1;
+//            curDir = 1;
         pointing = 0;
 //            clockWise = 1;
     }
     else {
 //            flip = SDL_FLIP_VERTICAL;
-//            dir = 0;
+//            curDir = 0;
 //            clockWise = 0;
         pointing = 1;
     }
     if (angle == 90) {
-        if (dir == 0) {
+        if (curDir == 0) {
             pointing = 0;
         }
         else {
@@ -142,7 +200,7 @@ void Car::correctAngle() {
         }
     }
     if (angle == 270) {
-        if (dir == 0) {
+        if (curDir == 0) {
             pointing = 0;
         }
         else {
@@ -150,13 +208,13 @@ void Car::correctAngle() {
         }
     }
     if (pointing == 1) {
-        if (dir == 1) {
+        if (curDir == 1) {
             flip = SDL_FLIP_VERTICAL;
             clockWise = 1;
         }
     }
     else {
-        if (dir == 0) {
+        if (curDir == 0) {
             flip = SDL_FLIP_NONE;
             clockWise = 0;
         }
@@ -401,7 +459,7 @@ void Car::boost(float sign) {
             }
         }
     }
-    if (dir != prvDir) {
+    if (curDir != prvDir) {
         boostVelocity /= 5;
     }
 //        gravityVelocityY = 0;
@@ -611,7 +669,7 @@ void Car::moveCar() {
     else {
         dodgeVelocityY += dodgeDragAccelerationY * deltaTime;
     }
-        if (dir != prvDir) {
+        if (curDir != prvDir) {
         dodgeVelocityX = 0;
         dodgeDragAccelerationX = 0;
         }
@@ -962,7 +1020,7 @@ void Car::draw() {
 //        SDL_RenderClear(renderer);
 //        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 //        std::cerr << (clockWise ? "clockwise" : "notCLockwise") << " ";
-//        std::cerr << (dir ? "going right" : "going left") << " ";
+//        std::cerr << (curDir ? "going right" : "going left") << " ";
 //        std::cerr << (pointing ? "pointing right" : "pointing left");
 //        std::cerr << "\n";
 
@@ -974,7 +1032,7 @@ void Car::draw() {
 //        std::cerr << "******************" << "\n";
 //        std::cerr << "angle = " << angle << "\n";
 //        std::cerr << (clockWise ? "clockwise      " : "not CLockwise") << "\n";
-//        std::cerr << "dir = " << dir << ", " << (dir ? "going right" : "going left  ") << "\n";
+//        std::cerr << "curDir = " << curDir << ", " << (curDir ? "going right" : "going left  ") << "\n";
 //        std::cerr << "pointing = " << pointing << ", " << (pointing ? "pointing right" : "pointing left  ") << "\n";
 //        std::cerr << (flip == SDL_FLIP_VERTICAL ? "vertical flipped" : "                      ") << "\n";
 //        std::cerr << "\n";
@@ -1085,17 +1143,17 @@ void Car::jump() {
 }
 
 void Car::setDir(bool newDir) {
-//        dir = newDir;
-    if (newDir != dir) {
-        if (pointing != dir) {
+//        curDir = newDir;
+    if (newDir != curDir) {
+        if (pointing != curDir) {
 
         }
         else {
             verticalFlip();
         }
-//            std::cerr << "changed dir" << "\n";
+//            std::cerr << "changed curDir" << "\n";
 //            verticalFlip();
-        dir = newDir;
+        curDir = newDir;
     }
 }
 

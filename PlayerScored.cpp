@@ -32,6 +32,9 @@ SDL_Surface* textSurface = nullptr;
 
 std::string inMidAirText = "0:00";
 int getFontSize(int score) {
+    if (score < 0) {
+        score = -score * 10;
+    }
     if (score <= 9) {
         return 50;
     }
@@ -45,12 +48,17 @@ int getFontSize(int score) {
 
 std::string toString(int x) {
     std::string s;
+    bool neg = x < 0;
+    x = abs(x);
     while (x != 0) {
         s = char((x % 10) + '0') + s;
         x /= 10;
     }
     if ((int)s.size() == 0) {
         s = "0";
+    }
+    if (neg) {
+        s = "-" + s;
     }
     return s;
 }
@@ -162,8 +170,8 @@ void displayScore(int score, int player) {
 
 Uint64 lastTime = SDL_GetTicks();
 Uint64 currentTime;
-int timeElapsed = 0;
-int timeLeft = 300;
+int timeElapsed = -1;
+int timeLeft = 301;
 bool countDown = 1;
 bool displayingScored = 0;
 void displayTime() { /// printReminder, Scored, Time
