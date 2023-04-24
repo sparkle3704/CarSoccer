@@ -4,4 +4,4 @@ Done: 2 players, boost, ball can spin, goal explosions, game background, time, s
 
 Bug: unnatural dodges
 
-Todo: Add other features: add more sound effects, music, gamemodes (maybe not), other effects (idk), beautify/modify some textures.
+Todo: Add more sound effects, music, gamemodes (maybe not), other effects (idk), beautify/modify some textures, clean up, free up, destroy all textures after the game.
