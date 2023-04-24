@@ -6,6 +6,9 @@
 #include "Structs.h"
 #include "Stats.h"
 #include "Ball.h"
+#include "Screens.h"
+#include "Explosion.h"
+#include "Sounds.h"
 
 /// Each player's score
 SDL_Texture* scoreTextureA = nullptr;
@@ -25,6 +28,12 @@ Uint64 reminderBeginTime;
 SDL_Surface* reminderSurface = nullptr;
 SDL_Texture* reminderTexture = nullptr;
 SDL_Rect reminderRect;
+
+/// OVERTIME!
+Uint64 overtimeBeginTime;
+SDL_Surface* overtimeSurface = nullptr;
+SDL_Texture* overtimeTexture = nullptr;
+SDL_Rect overtimeRect;
 
 /// Time
 SDL_Texture* timeTexture = nullptr;
@@ -63,9 +72,7 @@ std::string toString(int x) {
     return s;
 }
 
-
 void printPlayerScored(int player) {
-
     scoredBeginTime = SDL_GetTicks();
 
     std::string s;
@@ -111,8 +118,27 @@ void printReminder() {
 
     Font = nullptr; ///
     TTF_CloseFont(Font); ///
-//    SDL_FreeSurface(reminderSurface);
     reminderSurface = nullptr;
+}
+
+void printOvertime() {
+    overtimeBeginTime = SDL_GetTicks();
+    std::string s;
+    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+    s = "OVERTIME!";
+    overtimeSurface = TTF_RenderText_Blended(Font, s.c_str(), RED); ///
+
+    overtimeTexture = SDL_CreateTextureFromSurface(renderer, overtimeSurface); ///
+
+    int text_width = overtimeSurface->w; ///
+    int text_height = overtimeSurface->h; ///
+
+    vec2 center = vec2(960, 286);
+    overtimeRect = {center.x - text_width/2, center.y - text_height/2, text_width, text_height};
+
+    Font = nullptr; ///
+    TTF_CloseFont(Font); ///
+    overtimeSurface = nullptr;
 }
 
 std::pair<SDL_FRect, float> scorePlayer(int player, int w, int h) {
@@ -170,37 +196,109 @@ void displayScore(int score, int player) {
 
 Uint64 lastTime = SDL_GetTicks();
 Uint64 currentTime;
-int timeElapsed = -1;
-int timeLeft = 301;
+int timeElapsed = 0;
+int timeLeft = 300;
 bool countDown = 1;
 bool displayingScored = 0;
+bool displayingOvertime = 0;
+bool timer = 1;
+int minutes, seconds;
 void displayTime() { /// printReminder, Scored, Time
     currentTime = SDL_GetTicks();
-    int minutes, seconds;
-    if (countDown == 1) {
-        if (currentTime > lastTime + 1000)
-        {
-            timeLeft--;
-            lastTime = currentTime;
-        }
+    if (timer) {
+        if (countDown == 1) {
+            if (currentTime > lastTime + 1000)
+            {
+                timeLeft--;
+                lastTime = currentTime;
+            }
 
-        minutes = timeLeft / 60;
-        seconds = timeLeft % 60;
+            minutes = timeLeft / 60;
+            seconds = timeLeft % 60;
 
-        if (minutes == 1 && seconds == 0) {
-            printReminder();
+            if (minutes == 1 && seconds == 0) {
+                printReminder();
+            }
         }
-    }
-    else {
-        if (currentTime > lastTime + 1000) {
-            timeElapsed++;
-            lastTime = currentTime;
-        }
+        else {
 
-        minutes = timeElapsed / 60;
-        seconds = timeElapsed % 60;
+            if (currentTime > lastTime + 1000) {
+                timeElapsed++;
+                lastTime = currentTime;
+            }
+            std::cerr << "TRUOQ" << " " << timeElapsed << "\n";
+            minutes = timeElapsed / 60;
+            seconds = timeElapsed % 60;
+        }
     }
     /// Time
+    if (unlTimeMode == 0) {
+        if (timeLeft <= 0 && countDown && !inOvertime) {
+            if (ball.inMidAir) {
+                timeLeft = 0;
+                minutes = 0, seconds = 0;
+            }
+            else {
+                if (scoreA != scoreB) {
+                    timer = 0;
+                    if (currentTime - scoredBeginTime > 3500) {
+                        std::cerr << "SHOWING SCOREBOARD" << "\n";
+                        gameplay.onGameplay = 0;
+                        currentState = VICTORY;
+                        /// showScoreBoard
+                        /// show menu
+                        /// immediately
+                    }
+                    else {
+                        /// make it unable to score
+                        ball.resetBall(); ///
+                        ball.xPos = WINDOW_WIDTH*0.5 - ball.radius; ///
+                        ball.yPos = groundY - 2*ball.radius; ///
+//                        ball.inMidAir = 0;
+                    }
+
+                }
+                else {
+                    std::cerr << "ENTERING OVERTIME!" << "\n";
+                    printOvertime();
+                    playEffectOnce(overtimeSound, overtimeChannel);
+                    reset(1);
+                    countDown = 0;
+                    inOvertime = 1;
+                }
+            }
+        }
+        if (inOvertime && scoreA != scoreB) {
+            timer = 0;
+            ball.resetBall(); ///
+            ball.xPos = WINDOW_WIDTH*0.5 - ball.radius; ///
+            ball.yPos = groundY - 2*ball.radius; ///
+            if (currentTime - scoredBeginTime <= 500) {
+                std::cerr << "EQUALL" << "\n";
+//                    addExplosion(50, WINDOW_WIDTH*0.5, WINDOW_HEIGHT*0.5, 1);
+//                    addExplosion(50, WINDOW_WIDTH*0.5, WINDOW_HEIGHT*0.5, 2);
+
+                addExplosion(50, 0, WINDOW_HEIGHT*0.5, 1);
+                addExplosion(50, WINDOW_WIDTH, WINDOW_HEIGHT*0.5, 2);
+                updateExplosion(1);
+                renderExplosion(1);
+                updateExplosion(2);
+                renderExplosion(2);
+            }
+            if (currentTime - scoredBeginTime > 5000) {
+                gameplay.onGameplay = 0;
+                currentState = VICTORY;
+                /// showscoreboard
+            }
+
+        }
+    }
+    if (timeLeft <= 0 && timer && countDown) {
+        timeLeft = 0;
+        minutes = 0;
+        seconds = 0;
+    }
+
     std::string timeText = toString(minutes) + ":" + (seconds <= 9 ? "0" : "") + toString(seconds); ///
     Font = TTF_OpenFont(fontPath.c_str(), 50); ///
     textSurface = TTF_RenderText_Blended(Font, timeText.c_str(), { 255, 255, 255 }); ///
@@ -226,7 +324,13 @@ void displayTime() { /// printReminder, Scored, Time
         if (reminderTexture != nullptr && currentTime - reminderBeginTime <= 3*1000) {
             SDL_RenderCopy(renderer, reminderTexture, NULL, &reminderRect);
         }
+        if (overtimeTexture != nullptr && currentTime - overtimeBeginTime <= 3*1000) {
+            displayingOvertime = 1;
+            SDL_RenderCopy(renderer, overtimeTexture, NULL, &overtimeRect);
+        }
     }
+
+
 }
 
 void displayScores() {

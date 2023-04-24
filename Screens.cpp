@@ -7,14 +7,16 @@
 #include "PlayerScored.h"
 #include "SDL_Contexts.h"
 #include <vector>
-#include "Stats.h"
 
 bool isRunning = 1;
+bool inOvertime = 0;
+bool unlTimeMode = 0;
 gameState currentState = TITLE_SCREEN;
 
 TitleScreenInstance titleScreen;
 GameplayInstance gameplay;
-optionsWindowInstance optionsWindow;
+VictoryScreenInstance victoryScreen;
+OptionsWindowInstance optionsWindow;
 bool showingOptions = 0;
 bool isTyping, clicked;
 int mouseX, mouseY;
@@ -96,7 +98,7 @@ void TitleScreenInstance::handle() {
     }
 }
 
-void optionsWindowInstance::handleEvent() {
+void OptionsWindowInstance::handleEvent() {
     SDL_GetMouseState(&mouseX, &mouseY);
     if (event.type == SDL_MOUSEBUTTONDOWN) {
         if (event.button.button == SDL_BUTTON_LEFT) {
@@ -120,7 +122,7 @@ void optionsWindowInstance::handleEvent() {
     }
 }
 
-void optionsWindowInstance::setNames() {
+void OptionsWindowInstance::setNames() {
     player1_name = namePlayer[1].content;
     player2_name = namePlayer[2].content;
 
@@ -135,7 +137,7 @@ void optionsWindowInstance::setNames() {
 }
 
 
-void optionsWindowInstance::handleButtons() {
+void OptionsWindowInstance::handleButtons() {
     displayImage(optionsWindow_Texture, -2, -2);
     if (nameFieldIndex == 1) {
         namePlayer[1].content += "|";
@@ -160,7 +162,13 @@ void optionsWindowInstance::handleButtons() {
                 if (clicked) {
                     button.state = !button.state;
                     if (button.name == "unltime") {
-                        countDown = button.state;
+                        unlTimeMode = button.state;
+                        countDown = !unlTimeMode;
+                        if (countDown) {
+                            timeLeft = 300;
+                            timeElapsed = 0;
+                        }
+
                     }
                     else if (button.name == "sfx") {
                         mute = !button.state;
@@ -209,7 +217,6 @@ void GameplayInstance::handlePausedButtons() {
         if (button.withinArea(mouseX, mouseY)) {
             button.displayImage(1);
             if (clicked) {
-                std::cerr << "HERE< CLLICKED" << "\n";
                 if (button.name == "options") {
                     showingOptions = 1;
                     showingPausedMenu = 0;
@@ -236,7 +243,7 @@ void GameplayInstance::handlePausedButtons() {
 
 void GameplayInstance::handle() {
     init();
-    reset();
+    reset(0);
     while (onGameplay) {
         const Uint8* state = SDL_GetKeyboardState(NULL);
         clicked = 0;
@@ -427,6 +434,96 @@ void GameplayInstance::handle() {
                 showingPausedMenu = 1;
             }
         }
+        SDL_RenderPresent(renderer);
+        std::cerr << "UNL TIME MODE" << " " << unlTimeMode << ", " << "COUNTDOWN" << " " << countDown << "\n";
+    }
+}
+
+void VictoryScreenInstance::init() {
+    onVictoryScreen = 1;
+    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+    if (scoreA > scoreB) {
+        s = player1_name + " " + "WON!";
+        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), BLUE); ///
+    }
+    else {
+        s = player2_name + " " + "WON!";
+        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), ORANGE); ///
+    }
+
+    winnerTexture = SDL_CreateTextureFromSurface(renderer, winnerSurface); ///
+
+    width = winnerSurface->w; ///
+    height = winnerSurface->h; ///
+    rect = {960 - width/2, 286 - height/2, width, height};
+
+    Font = nullptr; ///
+    TTF_CloseFont(Font); ///
+    winnerSurface = nullptr;
+}
+
+void VictoryScreenInstance::handleButtons() { /// replay, options, menu
+    for (auto& button: victoryButtons) {
+        if (button.withinArea(mouseX, mouseY)) {
+            button.displayImage(1);
+            if (clicked) {
+                if (button.name != "options") {
+                    currentState = button.nextState;
+                    onVictoryScreen = 0;
+                    break;
+                }
+                else {
+                    showingOptions = 1;
+                }
+            }
+        }
+        else {
+            button.displayImage(0);
+        }
+    }
+}
+
+void VictoryScreenInstance::handle() {
+    init();
+    while (onVictoryScreen) {
+        clicked = 0;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                onVictoryScreen = 0;
+                break;
+            }
+            SDL_GetMouseState(&mouseX, &mouseY);
+
+            if (showingOptions) {
+                optionsWindow.handleEvent();
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    clicked = 1;
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
+        SDL_RenderClear(renderer);
+
+
+        if (scoreA > scoreB) {
+            displayImage(victoryP1_Texture);
+        }
+        else {
+            displayImage(victoryP2_Texture);
+        }
+
+        SDL_RenderCopyF(renderer, winnerTexture, NULL, &rect);
+
+        if (showingOptions == 0) {
+            handleButtons();
+        }
+        else {
+            optionsWindow.handleButtons();
+        }
+
         SDL_RenderPresent(renderer);
     }
 }

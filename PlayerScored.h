@@ -12,6 +12,7 @@ extern SDL_Texture* scoreTextureB;
 extern int messageTextWidth[];
 extern int messageTextHeight[];
 extern bool displayingScored;
+extern bool timer;
 
 extern SDL_Surface* surfaceMessage;
 
@@ -27,6 +28,12 @@ extern Uint64 reminderBeginTime;
 extern SDL_Surface* reminderSurface;
 extern SDL_Texture* reminderTexture;
 extern SDL_Rect reminderRect;
+
+extern Uint64 overtimeBeginTime;
+extern SDL_Surface* overtimeSurface;
+extern SDL_Texture* overtimeTexture;
+extern SDL_Rect overtimeRect;
+extern bool displayingOvertime;
 
 void printPlayerScored(int player);
 

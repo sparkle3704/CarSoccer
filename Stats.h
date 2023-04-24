@@ -17,6 +17,6 @@ extern void handleCollisions(Car& car1, Car& car2, Ball& ball);
 
 extern void Render(Car& car1, Car& car2, Ball& ball);
 
-extern void reset();
+extern void reset(bool overtime = 0);
 
 #endif // STATS_H_INCLUDED

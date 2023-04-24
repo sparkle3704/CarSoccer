@@ -28,6 +28,10 @@ int main(int argc, char* argv[]) {
                 std::cerr << "gameplay" << "\n";
                 gameplay.handle();
                 break;
+            case VICTORY:
+                std::cerr << "scoreboard" << "\n";
+                victoryScreen.handle();
+                break;
             case EXIT:
                 isRunning = 0;
                 break;

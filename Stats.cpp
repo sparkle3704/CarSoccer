@@ -4,6 +4,7 @@
 #include "CarBallCollisionHandler.h"
 #include "Controls.h"
 #include "PlayerScored.h"
+#include "Explosion.h"
 
 int prvScoreA = -1;
 int prvScoreB = -1;
@@ -35,15 +36,26 @@ void Render(Car& car1, Car& car2, Ball& ball) {
     car2.prvDir = car2.curDir;
 
     if (ball.yPos + ball.radius*2 <= botLeft1.y + 1e-1) { /// Front image
-       SDL_RenderCopy(renderer, frontPart, &srcRect, &dstRect);
+       SDL_RenderCopy(renderer, frontPart_Texture, &srcRect, &dstRect);
     }
 }
 
-void reset() {
-    prvScoreA = -1;
-    prvScoreB = -1;
-    scoreA = 0;
-    scoreB = 0;
+void reset(bool overtime) {
+    if (overtime) {
+        prvScoreA = scoreA;
+        prvScoreB = scoreB;
+    }
+    else {
+        inOvertime = 0;
+        prvScoreA = -1;
+        prvScoreB = -1;
+        scoreA = 0;
+        scoreB = 0;
+        overtimeBeginTime = 0;
+        scoredBeginTime = 0;
+        displayingScored = 0;
+    }
+
     player2_prvSign = -1, player1_prvSign = -1;
     player2_prvLeftRight = "";
     player1_prvLeftRight = "";
@@ -52,7 +64,22 @@ void reset() {
     car1.resetCar();
     car2.resetCar();
 
+
+    if (unlTimeMode == 0) {
+        countDown = 1;
+    }
+    else {
+        countDown = 0;
+    }
+
     lastTime = SDL_GetTicks();
     timeElapsed = 0;
-    timeLeft = 300;
+    timeLeft = 1;
+
+    timer = 1;
+    explosionParticles[1].clear();
+    explosionParticles[2].clear();
+
+    reminderBeginTime = 0;
+
 }

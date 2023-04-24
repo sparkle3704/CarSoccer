@@ -18,8 +18,8 @@ const std::string fontPath = "./assets/fonts/usethis/sans.ttf";
 
 SDL_Texture* background_Texture = nullptr;
 SDL_Texture* titleBackground_Texture = nullptr;
-SDL_Texture* frontPart = nullptr;
-SDL_Texture* scoreBoard = nullptr;
+SDL_Texture* frontPart_Texture = nullptr;
+SDL_Texture* scoreBoard_Texture = nullptr;
 
 SDL_Texture* car1_Texture = nullptr;
 SDL_Texture* car2_Texture = nullptr;
@@ -39,6 +39,10 @@ SDL_Texture* resumeButton_Selected_Texture = nullptr;
 SDL_Texture* resumeButton_Unselected_Texture = nullptr;
 SDL_Texture* menuButton_Selected_Texture = nullptr;
 SDL_Texture* menuButton_Unselected_Texture = nullptr;
+SDL_Texture* replayButton_Selected_Texture = nullptr;
+SDL_Texture* replayButton_Unselected_Texture = nullptr;
+SDL_Texture* victoryP1_Texture = nullptr;
+SDL_Texture* victoryP2_Texture = nullptr;
 
 float maxPower = 0;
 
@@ -126,6 +130,7 @@ void TextField::displayText() {
         rect = {x, y - height/2, width, height};
     }
 
+    textSurface = nullptr;
     SDL_RenderCopyF(renderer, textTexture, NULL, &rect);
 }
 
@@ -150,7 +155,7 @@ void displayBackground() {
     SDL_RenderClear(renderer);
 
     SDL_RenderCopy(renderer, background_Texture, &srcRect, &dstRect); /// Background image
-    SDL_RenderCopy(renderer, scoreBoard, &srcRect, &dstRect); /// Scoreboard image
+    SDL_RenderCopy(renderer, scoreBoard_Texture, &srcRect, &dstRect); /// Scoreboard image
 }
 
 void displayTitleBackground() {
@@ -171,16 +176,17 @@ Gallery::Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected, std::str
             y = centerY - (float)height * 0.5;
         }
         rect = {x, y, width, height};
-        if (name == "play") {
+        if (name == "play" || name == "replay") {
             nextState = GAMEPLAY;
+        }
+        else if (name == "menu") {
+            nextState = TITLE_SCREEN;
         }
         else if (name == "exit") {
             nextState = EXIT;
         }
-        else if (name == "options") {
-
-        }
 }
+
 
 void Gallery::displayImage(bool state) {
     if (state == 1) {
@@ -208,13 +214,16 @@ TextField namePlayer[3];
 
 bool initTextures() {
     loadTexture(background_Texture, "./assets/textures/usable_bg.png");
-    loadTexture(frontPart, "./assets/textures/front_part.png");
-    loadTexture(scoreBoard, "./assets/textures/score2.png");
+    loadTexture(frontPart_Texture, "./assets/textures/front_part.png");
+    loadTexture(scoreBoard_Texture, "./assets/textures/score2.png");
     loadTexture(car1_Texture, "./assets/textures/spr_casualcar_0.png");
     loadTexture(car2_Texture, "./assets/textures/car1_red.png");
     loadTexture(ballTexture, "./assets/textures/ggg.png");
     loadTexture(titleBackground_Texture, "./assets/textures/titlescreen.jpg");
     loadTexture(optionsWindow_Texture, "./assets/textures/optionswindow.png");
+    loadTexture(victoryP1_Texture, "./assets/textures/victory_p1.png");
+    loadTexture(victoryP2_Texture, "./assets/textures/victory_p2.png");
+
 
     loadTexture(playButton_Selected_Texture, "./assets/textures/play_selected.png");
     loadTexture(playButton_Unselected_Texture, "./assets/textures/play_unselected.png");
@@ -241,23 +250,34 @@ bool initTextures() {
     loadTexture(menuButton_Selected_Texture, "./assets/textures/menu_selected.png");
     loadTexture(menuButton_Unselected_Texture, "./assets/textures/menu_unselected.png");
 
+    loadTexture(replayButton_Selected_Texture, "./assets/textures/replay_selected.png");
+    loadTexture(replayButton_Unselected_Texture, "./assets/textures/replay_unselected.png");
+
+
     loadSoundEffect(explosionSound, "./assets/audio/test.wav");
     loadSoundEffect(ballHitSound, "./assets/audio/ballhitsound.wav");
     loadSoundEffect(boostStartSound, "./assets/audio/booststart.wav");
     loadSoundEffect(boostEndSound, "./assets/audio/boostend.wav");
 
+    loadSoundEffect(overtimeSound, "./assets/audio/overtime.wav");
+
+
     return loadedAll;
 }
-std::vector<Gallery> titleButtons, pausedButtons, optionsButtons;
-Gallery playButton, optionsButton, exitButton, okButton, unlTimeButton, noGroundButton, sfxButton, musicButton, resumeButton, options2Button, menuButton;
+std::vector<Gallery> titleButtons, pausedButtons, optionsButtons, victoryButtons;
+Gallery playButton, optionsButton, exitButton;
+Gallery okButton, unlTimeButton,  noGroundButton, sfxButton, musicButton;
+Gallery resumeButton, options2Button, menuButton;
+Gallery replayButton, options3Button, exit2Button;
 
 void initButtons() {
     playButton = Gallery(playButton_Selected_Texture, playButton_Unselected_Texture, "play", 960, 830 - 200);
     optionsButton = Gallery(optionsButton_Selected_Texture, optionsButton_Unselected_Texture, "options", 960, 980 - 200);
     exitButton = Gallery(exitButton_Selected_Texture, exitButton_Unselected_Texture, "exit", 960, 1130 - 200);
+
     okButton = Gallery(okButton_Selected_Texture, okButton_Unselected_Texture, "ok", 960, 840); /// 786
 
-    unlTimeButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "unltime", 864, 676, 1, 1);
+    unlTimeButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "unltime", 864, 676, 1, 0);
     noGroundButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "noground", 864, 716, 1, 0);
     sfxButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "sfx", 1226, 676, 1, 1);
     musicButton = Gallery(tickButton_Selected_Texture, tickButton_Unselected_Texture, "music", 1226, 716, 1, 1);
@@ -266,11 +286,17 @@ void initButtons() {
     options2Button = Gallery(optionsButton_Selected_Texture, optionsButton_Unselected_Texture, "options", 960, 540);
     menuButton = Gallery(menuButton_Selected_Texture, menuButton_Unselected_Texture, "menu", 960, 540 + 150);
 
+    replayButton = Gallery(replayButton_Selected_Texture, replayButton_Unselected_Texture, "replay", 160, 540 - 150 + 325);
+    options3Button = Gallery(optionsButton_Selected_Texture, optionsButton_Unselected_Texture, "options", 160, 540 + 325);
+    exit2Button = Gallery(exitButton_Selected_Texture, exitButton_Unselected_Texture, "exit", 160, 540 + 150 + 325);
+
     titleButtons = {playButton, optionsButton, exitButton};
 
     optionsButtons = {okButton, unlTimeButton, noGroundButton, sfxButton, musicButton};
 
     pausedButtons = {resumeButton, options2Button, menuButton};
+
+    victoryButtons = {replayButton, options3Button, exit2Button};
 
 
     ///

@@ -41,7 +41,7 @@ public:
 class TextField {
 public:
     TextField() {}
-    TextField(std::string content, int fontSize = 25, SDL_Color textColor = WHITE, float x = 0, float y = 0, bool middle = 1, Point A = {0, 0}, Point B = {0, 0});
+    TextField(std::string content, int fontSize = 25, SDL_Color textColor = WHITE, float x= 960, float y = 286, bool middle = 1, Point A = {0, 0}, Point B = {0, 0});
     std::string content;
     int fontSize;
     Point A, B;
@@ -50,6 +50,7 @@ public:
     bool middle;
     SDL_Surface* textSurface;
     SDL_Texture* textTexture;
+    Uint64 displayBeginTime;
     int width;
     int height;
     SDL_FRect rect;
@@ -60,7 +61,7 @@ public:
     bool withinNameField(int mouseX, int mouseY);
 };
 
-extern std::vector<Gallery> titleButtons, optionsButtons, pausedButtons;
+extern std::vector<Gallery> titleButtons, optionsButtons, pausedButtons, victoryButtons;
 extern TextField namePlayer[3];
 
 extern SDL_Texture* optionsWindow_Texture;
@@ -70,8 +71,8 @@ extern std::string inMidAirText;
 extern const std::string fontPath;
 
 extern SDL_Texture* background_Texture;
-extern SDL_Texture* frontPart;
-extern SDL_Texture* scoreBoard;
+extern SDL_Texture* frontPart_Texture;
+extern SDL_Texture* scoreBoard_Texture;
 
 extern SDL_Texture* car1_Texture;
 extern SDL_Texture* car2_Texture;
@@ -102,6 +103,10 @@ extern SDL_Texture* resumeButton_Selected_Texture;
 extern SDL_Texture* resumeButton_Unselected_Texture;
 extern SDL_Texture* menuButton_Selected_Texture;
 extern SDL_Texture* menuButton_Unselected_Texture;
+extern SDL_Texture* replayButton_Selected_Texture;
+extern SDL_Texture* replayButton_Unselected_Texture;
+extern SDL_Texture* victoryP1_Texture;
+extern SDL_Texture* victoryP2_Texture;
 
 extern void displayTitleBackground();
 extern void toUpper(std::string& s);

@@ -6,11 +6,14 @@
 #pragma once
 
 extern bool isRunning;
+extern bool unlTimeMode;
+extern bool inOvertime;
 extern bool mute;
 enum gameState {
     TITLE_SCREEN,
     GAMEPLAY,
-    EXIT
+    EXIT,
+    VICTORY
 };
 
 class TitleScreenInstance {
@@ -24,7 +27,7 @@ private:
     bool onTitleScreen;
 };
 
-class optionsWindowInstance {
+class OptionsWindowInstance {
 public:
     optionsWindow() {}
     int nameFieldIndex = 0;
@@ -38,12 +41,28 @@ class GameplayInstance {
 public:
     GameplayInstance() {}
     void handle();
+    bool onGameplay;
 
 private:
     void init();
-    bool onGameplay;
     void handlePausedButtons();
     bool showingPausedMenu;
+};
+
+class VictoryScreenInstance {
+public:
+    VictoryScreenInstance() {};
+    void handle();
+    void init();
+
+private:
+    bool onVictoryScreen;
+    void handleButtons();
+    SDL_Surface* winnerSurface = nullptr;
+    SDL_Texture* winnerTexture = nullptr;
+    int width, height;
+    SDL_FRect rect;
+    std::string s;
 };
 
 extern gameState currentState;
@@ -52,6 +71,6 @@ extern void handleGameplay();
 
 extern TitleScreenInstance titleScreen;
 extern GameplayInstance gameplay;
-extern optionsWindowInstance optionsWindow;
-
+extern OptionsWindowInstance optionsWindow;
+extern VictoryScreenInstance victoryScreen;
 #endif // SCREENS_H_INCLUDED

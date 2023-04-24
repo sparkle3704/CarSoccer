@@ -366,12 +366,22 @@ void Ball::moveBall() {
             velocityX *= -RESTITUTION*3;
             velocityY *= -RESTITUTION*3;
             playEffectOnce(explosionSound, explosionChannel);
+            ball.inMidAir = 0;
 //                Mix_PlayChannel(-1, explosionSound, 0);
 //            std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p2 scores
             printPlayerScored(2);
             ++scoreB;
             addExplosion(1000, xPos, yPos, 2);
-            resetBall();
+            if (inOvertime) {
+                addExplosion(1000, 1920 - xPos, yPos, 1);
+                resetBall();
+                xPos = WINDOW_WIDTH*0.5 - radius;
+                yPos = groundY - 2*radius;
+            }
+            else {
+                resetBall();
+            }
+
         }
         if (xPos > topRight2.x) {
             xPos = topRight2.x;
@@ -381,9 +391,19 @@ void Ball::moveBall() {
             playEffectOnce(explosionSound, explosionChannel);
 //            std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p1 scores
             ++scoreA;
+            ball.inMidAir = 0;
             addExplosion(1000, xPos, yPos, 1);
+            if (inOvertime) {
+                addExplosion(1000, 1920 - xPos, yPos, 2);
+                resetBall();
+                xPos = WINDOW_WIDTH*0.5 - radius;
+                yPos = groundY - 2*radius;
+            }
+            else {
+                resetBall();
+            }
             printPlayerScored(1);
-            resetBall();
+
         }
     }
 
