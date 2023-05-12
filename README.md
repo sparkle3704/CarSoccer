@@ -47,11 +47,11 @@ A fun and challenging game of car soccer. As the name suggests, players control 
 
 * Players' cars are on two sides, the ball is in the middle.
 * **normal mode**:
-    * The match's duration is 5 minutes. Players will enter overtime when the time is up and their score are equal. The first person to score in overtime wins the match. 
+    * The match's duration is 5 minutes. Players will enter overtime when the time is up and their scores are equal. The first person to score in overtime wins the match. 
     * If the time runs out but the ball is still in mid-air, the game will continue until the ball touches the ground or the goal floor. 
 * **No Ground Mode**:
    *  The ball will fall through the ground. 
-   * If it falls on the right half, i.e player 2's player 2 will receive a point, and vice versa. If it falls perfectly in the middle, no one will receive a point. 
+   * If the ball falls on the right half, i.e player 2's player 2 will receive a point, and vice versa. If it falls perfectly in the middle, no one will receive a point. 
 * **Unlimited Time Mode**:
    * The game continues forever. 
 
