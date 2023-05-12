@@ -24,23 +24,23 @@ A fun and challenging game of car soccer. As the name suggests, players control 
 
 ## Key combinations:
 
-- Holding **up** and then hit **jump** makes the car **dodge down**
-- Holding **down** and then hit **jump** makes the car **dodge up**
-- If the dodge is performed **forward**, i.e **dodge down**, the car will propel forward in the same direction that it was originally moving, but with a sudden burst of additional speed. 
-- If the dodge is performed **backwards**, i.e **dodge up**, the car will propel backward in the opposite direction that it was originally moving, but with a sudden burst of additional speed. 
-- While dodging in the **forward** direction, players can hit the key corresponding to the opposite direction, for example,  ← or A key when the car is **dodging down**, and the car will stay in place. Similarly, players can hit  → or D key while the car is **dodging up** to make the it stay in place.
+- Holding **up** and then hitting **jump** makes the car **dodge down**
+- Holding **down** and then hitting **jump** makes the car **dodge up**
+- If the dodge is performed **forward**, i.e **dodge down**, the car will **propel forward** in the **same direction** that it was originally moving, but with a sudden burst of additional speed. 
+- If the dodge is performed **backwards**, i.e **dodge up**, the car will **propel backward** in the **opposite direction** that it was originally moving, but with a sudden burst of additional speed. 
+- While dodging in the **forward** direction, players can hit the key corresponding to the **opposite direction**, for example,  ← or A key when the car is **dodging down**, and the car will stay in place. Similarly, players can hit  → or D key while the car is **dodging up** to make the it stay in place.
 
 # Screens
 
 ## Title Screen
 ![TitleScreen](https://github.com/sparkle3704/CarSoccer/assets/125803874/e6512b31-359f-440e-9c7a-735b8827bff7)
 
-### Three buttons: PLAY, OPTIONS, EXIT 
+### Three buttons: **PLAY, OPTIONS, EXIT**
 ![OptionsWindow](https://github.com/sparkle3704/CarSoccer/assets/125803874/d6c4f108-78d2-4bb9-b7d3-a8440e0a7bef)
 * **PLAY** leads to the **GamePlay Screen**.
 * **OPTIONS** opens up the **Options Window** 
-    * Players can change their name and some options: Unlimited Time, No Ground Mode, Sound Effects, Music.
-    * Hitting OK saves the settings and closes this window
+    * Players can change their names and some options: Unlimited Time, No Ground Mode, Sound Effects, Music.
+    * Hitting **OK** saves the settings and closes this window.
 * **EXIT** exits the game.
 ## Gameplay Screen 
 ![GameplayScreen](https://github.com/sparkle3704/CarSoccer/assets/125803874/b4cca304-d9ff-45fc-af4c-579a14af42ba)
@@ -48,7 +48,7 @@ A fun and challenging game of car soccer. As the name suggests, players control 
 * Players' cars are on two sides, the ball is in the middle.
 * **normal mode**:
     * The match's duration is 5 minutes. Players will enter overtime when the time is up and their score are equal. The first person to score in overtime wins the match. 
-    * If the time runs out but the ball is still in midair, the game will continue until the ball touches the ground or the goal floor. 
+    * If the time runs out but the ball is still in mid-air, the game will continue until the ball touches the ground or the goal floor. 
 * **No Ground Mode**:
    *  The ball will fall through the ground. 
    * If it falls on the right half, i.e player 2's player 2 will receive a point, and vice versa. If it falls perfectly in the middle, no one will receive a point. 
