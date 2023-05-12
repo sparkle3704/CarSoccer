@@ -32,6 +32,7 @@ public:
     float height;
     float angle;
     float velocityX = 0;
+    bool tilting = 0;
     float velocityY = 0;
     float mass = 200;
 
@@ -67,6 +68,7 @@ private:
     float dodgeVelocityY = 0;
     bool dodgingDown = 0;
     bool dodgingUp = 0;
+    bool collideWithGround = 0;
 
     Point parallelBeforeDodgeA;
     Point parallelBeforeDodgeB;
@@ -75,8 +77,8 @@ private:
     float carBallCollisionVelocityY = 0;
     float carBallCollisionDragAccelerationX = 0;
     float carBallCollisionDragAccelerationY = 0;
-    SDL_Texture* carTexture = nullptr;
-
+//    SDL_Texture* carTexture = nullptr;
+    std::shared_ptr<SDL_Texture> carTexture;
     int player;
 
     float dodgeDragAccelerationX = 0;

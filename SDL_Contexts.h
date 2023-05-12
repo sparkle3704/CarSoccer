@@ -8,6 +8,7 @@
 #include <vector>
 #include "Screens.h"
 #include "Structs.h"
+#include <memory>
 
 extern bool mute;
 extern SDL_Color ORANGE;
@@ -21,11 +22,11 @@ extern SDL_Color BLACK;
 class Gallery {
 public:
     Gallery() {}
-    Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected = nullptr, std::string name = "", float centerX = -1, float centerY = -1, bool toggle = 0, bool state = 1);
+    Gallery(std::shared_ptr<SDL_Texture> texture, std::shared_ptr<SDL_Texture> texture_unselected = nullptr, std::string name = "", float centerX = -1, float centerY = -1, bool toggle = 0, bool state = 1);
 
     gameState nextState;
-    SDL_Texture* texture;
-    SDL_Texture* texture_unselected;
+    std::shared_ptr<SDL_Texture> texture{nullptr, SDL_DestroyTexture};
+    std::shared_ptr<SDL_Texture> texture_unselected{nullptr, SDL_DestroyTexture};
     std::string name;
     SDL_FRect rect;
     int width, height;
@@ -48,8 +49,10 @@ public:
     SDL_Color textColor;
     float x, y;
     bool middle;
-    SDL_Surface* textSurface;
-    SDL_Texture* textTexture;
+//    SDL_Surface* textSurface;
+//    SDL_Texture* textTexture;
+    std::shared_ptr<SDL_Surface> textSurface{nullptr, SDL_FreeSurface};
+    std::shared_ptr<SDL_Texture> textTexture{nullptr, SDL_DestroyTexture};
     Uint64 displayBeginTime;
     int width;
     int height;
@@ -63,50 +66,62 @@ public:
 
 extern std::vector<Gallery> titleButtons, optionsButtons, pausedButtons, victoryButtons;
 extern TextField namePlayer[3];
-
-extern SDL_Texture* optionsWindow_Texture;
 extern std::string player1_name;
 extern std::string player2_name;
 extern std::string inMidAirText;
 extern const std::string fontPath;
-
-extern SDL_Texture* background_Texture;
-extern SDL_Texture* frontPart_Texture;
-extern SDL_Texture* scoreBoard_Texture;
-
-extern SDL_Texture* car1_Texture;
-extern SDL_Texture* car2_Texture;
-extern SDL_Texture* ballTexture;
-
-extern SDL_Texture* titleBackground_Texture;
 extern float maxPower;
-
-extern SDL_Renderer* renderer;
-extern SDL_Surface* screenSurface;
-extern TTF_Font* Font;
-extern TTF_Font* fontOutline;
-extern SDL_Window* window;
-
 extern int fullScreen;
 
-extern SDL_Texture* playButton_Selected_Texture;
-extern SDL_Texture* playButton_Unselected_Texture;
-extern SDL_Texture* exitButton_Selected_Texture;
-extern SDL_Texture* exitButton_Unselected_Texture;
-extern SDL_Texture* optionsButton_Selected_Texture;
-extern SDL_Texture* optionsButton_Unselected_Texture;
-extern SDL_Texture* okButton_Selected_Texture;
-extern SDL_Texture* okButton_Unselected_Texture;
-extern SDL_Texture* tickButton_Selected_Texture;
-extern SDL_Texture* tickButton_Unselected_Texture;
-extern SDL_Texture* resumeButton_Selected_Texture;
-extern SDL_Texture* resumeButton_Unselected_Texture;
-extern SDL_Texture* menuButton_Selected_Texture;
-extern SDL_Texture* menuButton_Unselected_Texture;
-extern SDL_Texture* replayButton_Selected_Texture;
-extern SDL_Texture* replayButton_Unselected_Texture;
-extern SDL_Texture* victoryP1_Texture;
-extern SDL_Texture* victoryP2_Texture;
+extern std::shared_ptr<SDL_Texture> optionsWindow_Texture;
+extern std::shared_ptr<SDL_Texture> background_Texture;
+extern std::shared_ptr<SDL_Texture> frontPart_Texture;
+extern std::shared_ptr<SDL_Texture> scoreBoard_Texture;
+extern std::shared_ptr<SDL_Texture> car1_Texture;
+extern std::shared_ptr<SDL_Texture> car2_Texture;
+extern std::shared_ptr<SDL_Texture> ballTexture;
+extern std::shared_ptr<SDL_Texture> titleBackground_Texture;
+extern std::shared_ptr<SDL_Texture> playButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> playButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> exitButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> exitButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> optionsButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> optionsButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> okButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> okButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> tickButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> tickButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> resumeButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> resumeButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> menuButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> menuButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> replayButton_Selected_Texture;
+extern std::shared_ptr<SDL_Texture> replayButton_Unselected_Texture;
+extern std::shared_ptr<SDL_Texture> victoryP1_Texture;
+extern std::shared_ptr<SDL_Texture> victoryP2_Texture;
+
+//extern SDL_Renderer* renderer;
+//extern SDL_Surface* screenSurface;
+//extern TTF_Font* Font;
+//extern TTF_Font* fontOutline;
+//extern SDL_Window* window;
+//
+
+//extern std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> Font;
+//extern std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> fontOutline;
+
+//extern std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer;
+//extern std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)> screenSurface;
+
+//extern std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
+
+extern std::shared_ptr<SDL_Renderer> renderer;
+extern std::shared_ptr<SDL_Surface> screenSurface;
+extern std::shared_ptr<SDL_Window> window;
+
+//extern TTF_Font* Font;
+extern std::shared_ptr<TTF_Font> Font;
+extern std::shared_ptr<TTF_Font> fontOutline;
 
 extern void displayTitleBackground();
 extern void toUpper(std::string& s);
@@ -115,7 +130,7 @@ extern SDL_Rect dstRect;
 
 extern SDL_Rect srcRect;
 
-extern bool loadTexture(SDL_Texture*& texture, std::string path);
+extern bool loadTexture(std::shared_ptr<SDL_Texture>& texture, std::string path);
 
 extern void displayTitleBackground();
 

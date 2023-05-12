@@ -8,8 +8,8 @@
 
 std::random_device rd2;
 std::mt19937 gen2(rd2());
-SDL_Texture* explosionTexture = NULL;
-
+//std::shared_ptr<SDL_Texture> explosionTexture{nullptr, SDL_DestroyTexture};
+SDL_Texture* explosionTexture = nullptr;
 std::vector<Particle> explosionParticles[3];
 void addExplosion(int numParticles, float startX, float startY, int player) {
     std::uniform_real_distribution<float> size_gen(1, 15);
@@ -33,7 +33,8 @@ void addExplosion(int numParticles, float startX, float startY, int player) {
         }
         explosionParticles[player].push_back(Particle(startX, startY, vx, vy, size, alpha, dragX, dragY));
     }
-    explosionTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
+//    explosionTexture.reset(SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300), SDL_DestroyTexture);
+    explosionTexture = SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
     SDL_DestroyTexture(explosionTexture);
 }
 
@@ -97,25 +98,31 @@ void updateExplosion(int player) {
 }
 
 void renderExplosion(int player) {
+    std::cerr << "asdfasdf" << "\n";
     // Set blending mode for boostParticles
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
 
+//    SDL_Texture* explosionTexture = SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
+//    explosionTexture.reset(SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300), SDL_DestroyTexture);
+//    std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)> explosionTexture{SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300), SDL_DestroyTexture};
     // Set texture as render target
-    SDL_SetRenderTarget(renderer, explosionTexture);
+//    SDL_SetRenderTarget(renderer.get(), SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300));
 
     // Clear texture with transparent color
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_SetRenderDrawColor(renderer.get(), 0, 0, 0, 0);
 
     for (auto& particle: explosionParticles[player]) {
         SDL_FRect boostRect = {particle.x - particle.size/2.0f, particle.y - particle.size/2.0f, particle.size, particle.size};
         std::array<int, 3> rgb = boostColor(particle.alpha, player);
-        SDL_SetRenderDrawColor(renderer, rgb[0], rgb[1], rgb[2], 255);
-        SDL_RenderFillRectF(renderer, &boostRect);
+        SDL_SetRenderDrawColor(renderer.get(), rgb[0], rgb[1], rgb[2], 255);
+        SDL_RenderFillRectF(renderer.get(), &boostRect);
 //        SDL_DestroyTexture(explosionTexture);
     }
     // Reset render target to default
-    SDL_SetRenderTarget(renderer, nullptr);
+    SDL_SetRenderTarget(renderer.get(), nullptr);
 
     // Draw texture to screen
-    SDL_RenderCopy(renderer, explosionTexture, nullptr, nullptr);
+    SDL_RenderCopy(renderer.get(), explosionTexture, nullptr, nullptr);
+//    SDL_DestroyTexture(explosionTexture.get());
+//    explosionTexture = nullptr;
 }

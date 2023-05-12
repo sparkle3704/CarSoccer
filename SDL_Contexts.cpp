@@ -10,47 +10,97 @@
 #include <iostream>
 #include <vector>
 #include "Screens.h"
+#include "unordered_map"
+#include "PlayerScored.h"
 
 std::string player1_name = "Player 1";
 std::string player2_name = "Player 2";
 
 const std::string fontPath = "./assets/fonts/usethis/sans.ttf";
 
-SDL_Texture* background_Texture = nullptr;
-SDL_Texture* titleBackground_Texture = nullptr;
-SDL_Texture* frontPart_Texture = nullptr;
-SDL_Texture* scoreBoard_Texture = nullptr;
+//SDL_Texture* optionsWindow_Texture = nullptr;
+//SDL_Texture* titleBackground_Texture = nullptr;
+//SDL_Texture* frontPart_Texture = nullptr;
+//SDL_Texture* scoreBoard_Texture = nullptr;
+//SDL_Texture* car1_Texture = nullptr;
+//SDL_Texture* car2_Texture = nullptr;
+//SDL_Texture* ballTexture = nullptr;
+//SDL_Texture* playButton_Selected_Texture = nullptr;
+//SDL_Texture* playButton_Unselected_Texture = nullptr;
+//SDL_Texture* exitButton_Selected_Texture = nullptr;
+//SDL_Texture* exitButton_Unselected_Texture = nullptr;
+//SDL_Texture* optionsButton_Selected_Texture = nullptr;
+//SDL_Texture* optionsButton_Unselected_Texture = nullptr;
+//SDL_Texture* okButton_Selected_Texture = nullptr;
+//SDL_Texture* okButton_Unselected_Texture = nullptr;
+//SDL_Texture* tickButton_Selected_Texture = nullptr;
+//SDL_Texture* tickButton_Unselected_Texture = nullptr;
+//SDL_Texture* optionsWindow_Texture = nullptr;
+//SDL_Texture* resumeButton_Selected_Texture = nullptr;
+//SDL_Texture* resumeButton_Unselected_Texture = nullptr;
+//SDL_Texture* menuButton_Selected_Texture = nullptr;
+//SDL_Texture* menuButton_Unselected_Texture = nullptr;
+//SDL_Texture* replayButton_Selected_Texture = nullptr;
+//SDL_Texture* replayButton_Unselected_Texture = nullptr;
+//SDL_Texture* victoryP1_Texture = nullptr;
+//SDL_Texture* victoryP2_Texture = nullptr;
 
-SDL_Texture* car1_Texture = nullptr;
-SDL_Texture* car2_Texture = nullptr;
-SDL_Texture* ballTexture = nullptr;
-SDL_Texture* playButton_Selected_Texture = nullptr;
-SDL_Texture* playButton_Unselected_Texture = nullptr;
-SDL_Texture* exitButton_Selected_Texture = nullptr;
-SDL_Texture* exitButton_Unselected_Texture = nullptr;
-SDL_Texture* optionsButton_Selected_Texture = nullptr;
-SDL_Texture* optionsButton_Unselected_Texture = nullptr;
-SDL_Texture* okButton_Selected_Texture = nullptr;
-SDL_Texture* okButton_Unselected_Texture = nullptr;
-SDL_Texture* tickButton_Selected_Texture = nullptr;
-SDL_Texture* tickButton_Unselected_Texture = nullptr;
-SDL_Texture* optionsWindow_Texture = nullptr;
-SDL_Texture* resumeButton_Selected_Texture = nullptr;
-SDL_Texture* resumeButton_Unselected_Texture = nullptr;
-SDL_Texture* menuButton_Selected_Texture = nullptr;
-SDL_Texture* menuButton_Unselected_Texture = nullptr;
-SDL_Texture* replayButton_Selected_Texture = nullptr;
-SDL_Texture* replayButton_Unselected_Texture = nullptr;
-SDL_Texture* victoryP1_Texture = nullptr;
-SDL_Texture* victoryP2_Texture = nullptr;
+std::shared_ptr<SDL_Texture> optionsWindow_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> background_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> titleBackground_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> frontPart_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> scoreBoard_Texture(nullptr, SDL_DestroyTexture);
+
+std::shared_ptr<SDL_Texture> car1_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> car2_Texture(nullptr, SDL_DestroyTexture);
+
+
+std::shared_ptr<SDL_Texture> ballTexture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> playButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> playButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> exitButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> exitButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> optionsButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> optionsButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> okButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> okButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> tickButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> tickButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> resumeButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> resumeButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> menuButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> menuButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> replayButton_Selected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> replayButton_Unselected_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> victoryP1_Texture(nullptr, SDL_DestroyTexture);
+std::shared_ptr<SDL_Texture> victoryP2_Texture(nullptr, SDL_DestroyTexture);
+
 
 float maxPower = 0;
 
-SDL_Renderer* renderer = nullptr;
-SDL_Surface* screenSurface = nullptr;
-TTF_Font* Font = nullptr;
-TTF_Font* fontOutline = nullptr;
-SDL_Window* window = nullptr;
+//SDL_Renderer* renderer.get() = nullptr;
+//SDL_Surface* screenSurface = nullptr;
+//TTF_Font* Font = nullptr;
+//TTF_Font* fontOutline = nullptr;
+//SDL_Window* window = nullptr;
+//std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> Font{nullptr, TTF_CloseFont};
+//std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> fontOutline{nullptr, TTF_CloseFont};
+
+//std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer(){nullptr, SDL_DestroyRenderer};
+//std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)> screenSurface{nullptr, SDL_FreeSurface};
+//
+//std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window{nullptr, SDL_DestroyWindow};
+
+//std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> Font{nullptr, TTF_CloseFont};
+//std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> fontOutline{nullptr, TTF_CloseFont};
+
+/// Font
+std::shared_ptr<TTF_Font> Font(nullptr, TTF_CloseFont);
+std::shared_ptr<TTF_Font> fontOutline(nullptr, TTF_CloseFont);
+
+std::shared_ptr<SDL_Renderer> renderer(nullptr, SDL_DestroyRenderer);
+std::shared_ptr<SDL_Surface> screenSurface(nullptr, SDL_FreeSurface);
+std::shared_ptr<SDL_Window> window(nullptr, SDL_DestroyWindow);
 
 int fullScreen = 1;
 
@@ -68,6 +118,7 @@ void toUpper(std::string& s) {
     }
     return;
 }
+
 
 TextField::TextField(std::string content, int fontSize, SDL_Color textColor, float x, float y, bool middle, Point A, Point B):
     content(content), fontSize(fontSize), textColor(textColor), x(x), y(y), middle(middle), A(A), B(B) {
@@ -111,17 +162,42 @@ void normalize(std::string& s) {
     }
 }
 
+/// no
+//void TextField::displayText() {
+//    normalize(content);
+//    Font = TTF_OpenFont(fontPath.c_str(), fontSize); ///
+//    textSurface = TTF_RenderText_Blended(Font, content.c_str(), textColor); ///
+//    Font = nullptr; ///
+//    TTF_CloseFont(Font); ///
+//
+//    textTexture = SDL_CreateTextureFromSurface(renderer.get(), textSurface.get()); ///
+//
+//    width = textSurface->w; ///
+//    height = textSurface->h; ///
+//
+//    if (middle) {
+//        rect = {x - width/ 2, y - height/ 2, width, height};
+//    }
+//    else {
+//        rect = {x, y - height/2, width, height};
+//    }
+//
+//    textSurface = nullptr;
+//    SDL_RenderCopyF(renderer.get(), textTexture, NULL, &rect);
+//}
+
+
 void TextField::displayText() {
     normalize(content);
-    Font = TTF_OpenFont(fontPath.c_str(), fontSize); ///
-    textSurface = TTF_RenderText_Blended(Font, content.c_str(), textColor); ///
-    Font = nullptr; ///
-    TTF_CloseFont(Font); ///
+//    auto FontDeleter = [](TTF_Font* font) { TTF_CloseFont(font); };
+//    std::shared_ptr<TTF_Font> Font(TTF_OpenFont(fontPath.c_str(), fontSize), FontDeleter);
+    Font.reset(TTF_OpenFont(fontPath.c_str(), fontSize), TTF_CloseFont);
+    textSurface.reset(TTF_RenderText_Blended(Font.get(), content.c_str(), textColor), SDL_FreeSurface);
 
-    textTexture = SDL_CreateTextureFromSurface(renderer, textSurface); ///
+    textTexture.reset(SDL_CreateTextureFromSurface(renderer.get(), textSurface.get()), SDL_DestroyTexture);
 
-    width = textSurface->w; ///
-    height = textSurface->h; ///
+    width = textSurface->w;
+    height = textSurface->h;
 
     if (middle) {
         rect = {x - width/ 2, y - height/ 2, width, height};
@@ -130,44 +206,75 @@ void TextField::displayText() {
         rect = {x, y - height/2, width, height};
     }
 
-    textSurface = nullptr;
-    SDL_RenderCopyF(renderer, textTexture, NULL, &rect);
+    SDL_RenderCopyF(renderer.get(), textTexture.get(), NULL, &rect);
 }
-
 SDL_Rect dstRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }; // Set destination rectangle to cover entire window
 SDL_Rect srcRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }; // Example: render the entire texture
 
 bool loadedAll = 1;
 
-bool loadTexture(SDL_Texture*& texture, std::string path) {
-    if (texture == nullptr) {
-        texture = IMG_LoadTexture(renderer, path.c_str());
+//std::unordered_map<std::string, std::shared_ptr<SDL_Texture>> textures;
+//bool loadTexture(SDL_Texture*& texture, std::string path) {
+////    if (texture == nullptr) {
+////        texture = IMG_LoadTexture(renderer.get(), path.c_str());
+////    }
+////    if (texture == nullptr) {
+////        loadedAll = 0;
+////        return 0;
+////    }
+////    return 1;
+////
+//    if (textures.find(path) == textures.end()) {
+//        texture = IMG_LoadTexture(renderer.get(), path.c_str());
+//        if (texture == nullptr) {
+//            loadedAll = 0;
+//            return 0;
+//        }
+//        textures[path] = texture;
+//    }
+//    else {
+//        texture = textures[path];
+//    }
+//    return 1;
+//}
+
+std::unordered_map<std::string, std::shared_ptr<SDL_Texture>> textures;
+
+bool loadTexture(std::shared_ptr<SDL_Texture>& texture, std::string path) {
+    auto it = textures.find(path);
+    if (textures.find(path) == textures.end()) {
+        SDL_Texture* raw_texture = IMG_LoadTexture(renderer.get(), path.c_str());
+        if (raw_texture == nullptr) {
+            loadedAll = 0;
+            return 0;
+        }
+        texture.reset(raw_texture, SDL_DestroyTexture);
+        textures[path] = texture;
     }
-    if (texture == nullptr) {
-        loadedAll = 0;
-        return 0;
+    else {
+        texture = it->second;
     }
     return 1;
 }
 
 void displayBackground() {
-    SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
-    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer.get(), 221, 160, 221, 255);
+    SDL_RenderClear(renderer.get());
 
-    SDL_RenderCopy(renderer, background_Texture, &srcRect, &dstRect); /// Background image
-    SDL_RenderCopy(renderer, scoreBoard_Texture, &srcRect, &dstRect); /// Scoreboard image
+    SDL_RenderCopy(renderer.get(), background_Texture.get(), &srcRect, &dstRect); /// Background image
+    SDL_RenderCopy(renderer.get(), scoreBoard_Texture.get(), &srcRect, &dstRect); /// Scoreboard image
 }
 
 void displayTitleBackground() {
-    SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
-    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer.get(), 221, 160, 221, 255);
+    SDL_RenderClear(renderer.get());
 
-    SDL_RenderCopy(renderer, titleBackground_Texture, &srcRect, &dstRect); /// titleBackground
+    SDL_RenderCopy(renderer.get(), titleBackground_Texture.get(), &srcRect, &dstRect); /// titleBackground
 }
 
-Gallery::Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected, std::string name, float centerX, float centerY, bool toggle, bool state):
+Gallery::Gallery(std::shared_ptr<SDL_Texture> texture, std::shared_ptr<SDL_Texture> texture_unselected, std::string name, float centerX, float centerY, bool toggle, bool state):
     texture(texture), texture_unselected(texture_unselected), name(name), centerX(centerX), centerY(y), toggle(toggle), state(state) {
-        SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+        SDL_QueryTexture(texture.get(), NULL, NULL, &width, &height);
         if (centerX == -1 && centerY == -1) {
             x = 0, y = 0;
         }
@@ -191,19 +298,30 @@ Gallery::Gallery(SDL_Texture* texture, SDL_Texture* texture_unselected, std::str
 void Gallery::displayImage(bool state) {
     if (state == 1) {
 //        std::cerr << "heyy" << "\n";
-        SDL_RenderCopyF(renderer, texture, NULL, &rect);
+        SDL_RenderCopyF(renderer.get(), texture.get(), NULL, &rect);
     }
     else {
 //        std::cerr << "nooooooo" << "\n";
-        SDL_RenderCopyF(renderer, texture_unselected, NULL, &rect);
+        SDL_RenderCopyF(renderer.get(), texture_unselected.get(), NULL, &rect);
     }
 }
 
-bool loadSoundEffect(Mix_Chunk*& chunk, std::string path) {
-    if (chunk == nullptr) {
-        chunk = Mix_LoadWAV(path.c_str());
+bool loadSoundEffect(Mix_Chunk*& sfx, std::string path) {
+    if (sfx == nullptr) {
+        sfx = Mix_LoadWAV(path.c_str());
     }
-    if (chunk == nullptr) {
+    if (sfx == nullptr) {
+        loadedAll = 0;
+        return 0;
+    }
+    return 1;
+}
+
+bool loadMusic(Mix_Music*& song, std::string path) {
+    if (song == nullptr) {
+        song = Mix_LoadMUS(path.c_str());
+    }
+    if (song == nullptr) {
         loadedAll = 0;
         return 0;
     }
@@ -258,12 +376,21 @@ bool initTextures() {
     loadSoundEffect(ballHitSound, "./assets/audio/ballhitsound.wav");
     loadSoundEffect(boostStartSound, "./assets/audio/booststart.wav");
     loadSoundEffect(boostEndSound, "./assets/audio/boostend.wav");
-
     loadSoundEffect(overtimeSound, "./assets/audio/overtime.wav");
+    loadSoundEffect(victorySound, "./assets/audio/victorysound.wav");
+    loadSoundEffect(clickSound, "./assets/audio/click.wav");
+
+
+    loadMusic(musicTitle, "./assets/audio/songtitle.wav");
+    loadMusic(musicGameplay, "./assets/audio/songgameplay.wav");
+    loadMusic(musicVictory, "./assets/audio/victory.wav");
+    loadMusic(musicVictory0, "./assets/audio/victory0.wav");
+
 
 
     return loadedAll;
 }
+
 std::vector<Gallery> titleButtons, pausedButtons, optionsButtons, victoryButtons;
 Gallery playButton, optionsButton, exitButton;
 Gallery okButton, unlTimeButton,  noGroundButton, sfxButton, musicButton;
@@ -333,8 +460,54 @@ void displayImage(SDL_Texture* texture, float x, float y, float percent) {
         y -= (float)height * 0.5;
     }
     SDL_FRect rect = {x, y, width, height};
-    SDL_RenderCopyF(renderer, texture, NULL, &rect);
+    SDL_RenderCopyF(renderer.get(), texture, NULL, &rect);
 }
+
+//bool initEverything() {
+//    toUpper(player1_name);
+//    toUpper(player2_name);
+//
+//    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");
+//
+//	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
+//		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+//		return 0;
+//	}
+//	if (SDL_Init(SDL_INIT_AUDIO) != 0) {
+//		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+//		return 0;
+//	}
+//    window.reset(SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE));
+//    if (window == nullptr){
+//        std::cerr<< "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+//        SDL_Quit();
+//        return 0;
+//    }
+//    // SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+//    renderer.reset(SDL_CreateRenderer(window.get(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC));
+//    if (renderer.get() == nullptr) {
+////        SDL_DestroyWindow(window);
+//        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
+//        SDL_Quit();
+//        return 0;
+//    }
+//    if (TTF_Init() != 0) {
+//        std::cerr << "TTF_Init Error : " << SDL_GetError() << "\n";
+//        return 0;
+//    }
+//    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+//        std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " <<  Mix_GetError() << "\n";
+//        return 0;
+//    }
+//
+//    if (initTextures() == 0) {
+//        return 0;
+//    }
+//
+//    initButtons();
+//    screenSurface.reset(SDL_GetWindowSurface(window.get()));
+//    return 1;
+//}
 
 bool initEverything() {
     toUpper(player1_name);
@@ -342,54 +515,60 @@ bool initEverything() {
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2");
 
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
-		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
-		return 0;
-	}
-	if (SDL_Init(SDL_INIT_AUDIO) != 0) {
-		std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
-		return 0;
-	}
-    window = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-    if (window == nullptr){
-        std::cerr<< "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return 0;
-    }
-    // SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    if (renderer == nullptr) {
-        SDL_DestroyWindow(window);
-        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return 0;
-    }
-    if (TTF_Init() != 0) {
-        std::cerr << "TTF_Init Error : " << SDL_GetError() << "\n";
-        return 0;
-    }
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " <<  Mix_GetError() << "\n";
-        return 0;
+    if (SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_AUDIO) != 0){
+        std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        return false;
     }
 
-    if (initTextures() == 0) {
-        return 0;
+    window.reset(SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+    if (window.get() == nullptr){
+        std::cerr<< "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return false;
+    }
+
+    // SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+    renderer.reset(SDL_CreateRenderer(window.get(), -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC), SDL_DestroyRenderer);
+    if (renderer.get() == nullptr) {
+        std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return false;
+    }
+
+    if (TTF_Init() != 0) {
+        std::cerr << "TTF_Init Error : " << SDL_GetError() << "\n";
+        return false;
+    }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " <<  Mix_GetError() << "\n";
+        return false;
+    }
+
+    if (initTextures() == false) {
+        return false;
     }
 
     initButtons();
-    screenSurface = SDL_GetWindowSurface(window);
-    return 1;
+    screenSurface.reset(SDL_GetWindowSurface(window.get()), SDL_FreeSurface);
+
+    return true;
+}
+
+
+void unloadTextures() {
+//    for (auto& texture : textures) {
+//        SDL_DestroyTexture(texture.second);
+//        texture.second = nullptr;
+//    }
+//    textures.clear();
 }
 
 void closeEverything() {
+    unloadTextures();
+
 //    SDL_DestroyTexture(carB);
 
-    SDL_DestroyRenderer(renderer);
-    renderer = NULL;
-
-    SDL_DestroyWindow(window);
-    window = NULL;
 
 //    SDL_DestroyTexture(explosionTexture);
 //    boostTexture = NULL;
@@ -415,15 +594,35 @@ void closeEverything() {
 	Mix_FreeChunk(explosionSound);
 	explosionSound = NULL;
 
-    SDL_DestroyTexture(ballTexture);
-    ballTexture = NULL;
+	    // Destroy the renderer.get()
+//    if (renderer.get() != nullptr) {
+//        SDL_Destroyrenderer.get()(renderer.get());
+//        renderer.get() = nullptr;
+//    }
+//
+//    // Free the screen surface
+//    if (screenSurface != nullptr) {
+//        SDL_FreeSurface(screenSurface);
+//        screenSurface = nullptr;
+//    }
+//
+//    // Free the font resources
+//    if (Font != nullptr) {
+//        TTF_CloseFont(Font);
+//        Font = nullptr;
+//    }
+//    if (fontOutline != nullptr) {
+//        TTF_CloseFont(fontOutline);
+//        fontOutline = nullptr;
+//    }
+//
+//    // Destroy the window
+//    if (window != nullptr) {
+//        SDL_DestroyWindow(window);
+//        window = nullptr;
+//    }
 
-    SDL_DestroyTexture(car1_Texture);
-    car1_Texture = NULL;
-
-    SDL_DestroyTexture(car2_Texture);
-    car2_Texture = NULL;
-
+    destroyAndFree();
     Mix_Quit();
     IMG_Quit();
     SDL_Quit();

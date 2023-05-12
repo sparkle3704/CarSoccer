@@ -1,10 +1,14 @@
 #ifndef SCREENS_H_INCLUDED
 #define SCREENS_H_INCLUDED
 
+#include <memory>
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <SDL2/SDL_ttf.h>
 #pragma once
 
+extern std::shared_ptr<TTF_Font> Font;
+extern std::shared_ptr<TTF_Font> fontOutlinet;
 extern bool isRunning;
 extern bool unlTimeMode;
 extern bool inOvertime;
@@ -58,8 +62,11 @@ public:
 private:
     bool onVictoryScreen;
     void handleButtons();
-    SDL_Surface* winnerSurface = nullptr;
-    SDL_Texture* winnerTexture = nullptr;
+//    SDL_Surface* winnerSurface = nullptr;
+    std::shared_ptr<SDL_Surface> winnerSurface{nullptr, SDL_FreeSurface};
+    std::shared_ptr<SDL_Texture> winnerTexture{nullptr, SDL_DestroyTexture};
+
+//    SDL_Texture* winnerTexture = nullptr;
     int width, height;
     SDL_FRect rect;
     std::string s;

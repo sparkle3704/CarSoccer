@@ -6,7 +6,14 @@
 #include "Stats.h"
 #include "PlayerScored.h"
 #include "SDL_Contexts.h"
+#include "Sounds.h"
 #include <vector>
+#include "Explosion.h"
+#include "Sounds.h"
+
+//std::shared_ptr<TTF_Font> Font(nullptr, TTF_CloseFont);
+//std::shared_ptr<TTF_Font> fontOutline(nullptr, TTF_CloseFont);
+
 
 bool isRunning = 1;
 bool inOvertime = 0;
@@ -38,6 +45,8 @@ void TitleScreenInstance::init() {
     onTitleScreen = 1;
     showingOptions = 0;
     clicked = 0;
+    Mix_HaltMusic();
+    music = musicTitle;
 }
 
 void TitleScreenInstance::handleButtons() {
@@ -45,6 +54,7 @@ void TitleScreenInstance::handleButtons() {
         if (button.withinArea(mouseX, mouseY)) {
             button.displayImage(1);
             if (clicked) {
+                playEffectOnce(clickSound, clickChannel);
                 if (button.name != "options") {
                     currentState = button.nextState;
                     onTitleScreen = 0;
@@ -64,6 +74,7 @@ void TitleScreenInstance::handleButtons() {
 void TitleScreenInstance::handle() {
     init();
     while (onTitleScreen) {
+        playMusic();
         clicked = 0;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -82,10 +93,10 @@ void TitleScreenInstance::handle() {
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
-        SDL_RenderClear(renderer);
+        SDL_SetRenderDrawColor(renderer.get(), 221, 160, 221, 255);
+        SDL_RenderClear(renderer.get());
 
-        displayImage(titleBackground_Texture);
+        displayImage(titleBackground_Texture.get());
 
         if (showingOptions == 0) {
             handleButtons();
@@ -94,7 +105,7 @@ void TitleScreenInstance::handle() {
             optionsWindow.handleButtons();
         }
 
-        SDL_RenderPresent(renderer);
+        SDL_RenderPresent(renderer.get());
     }
 }
 
@@ -138,7 +149,7 @@ void OptionsWindowInstance::setNames() {
 
 
 void OptionsWindowInstance::handleButtons() {
-    displayImage(optionsWindow_Texture, -2, -2);
+    displayImage(optionsWindow_Texture.get(), -2, -2);
     if (nameFieldIndex == 1) {
         namePlayer[1].content += "|";
     }
@@ -160,6 +171,7 @@ void OptionsWindowInstance::handleButtons() {
             if (button.toggle == 1) {
                 button.displayImage(button.state);
                 if (clicked) {
+                    playEffectOnce(clickSound, clickChannel);
                     button.state = !button.state;
                     if (button.name == "unltime") {
                         unlTimeMode = button.state;
@@ -171,10 +183,11 @@ void OptionsWindowInstance::handleButtons() {
 
                     }
                     else if (button.name == "sfx") {
-                        mute = !button.state;
+                        muteSFX = !button.state;
                     }
                     else if (button.name == "music") {
                         ///
+                        muteMusic = !button.state;
                     }
                     else if (button.name == "noground") {
                         ///
@@ -186,6 +199,7 @@ void OptionsWindowInstance::handleButtons() {
                 button.displayImage(1);
                 if (clicked) {
                     if (button.name == "ok") {
+                        playEffectOnce(clickSound, clickChannel);
                         showingOptions = 0;
                     }
                 }
@@ -208,6 +222,8 @@ void GameplayInstance::init() {
     onGameplay = 1;
     showingOptions = 0;
     clicked = 0;
+    Mix_HaltMusic();
+    music = musicGameplay;
 }
 
 void GameplayInstance::handlePausedButtons() {
@@ -217,6 +233,7 @@ void GameplayInstance::handlePausedButtons() {
         if (button.withinArea(mouseX, mouseY)) {
             button.displayImage(1);
             if (clicked) {
+                playEffectOnce(clickSound, clickChannel);
                 if (button.name == "options") {
                     showingOptions = 1;
                     showingPausedMenu = 0;
@@ -245,6 +262,7 @@ void GameplayInstance::handle() {
     init();
     reset(0);
     while (onGameplay) {
+        playMusic();
         const Uint8* state = SDL_GetKeyboardState(NULL);
         clicked = 0;
         while (SDL_PollEvent(&event)) {
@@ -318,6 +336,16 @@ void GameplayInstance::handle() {
 
         /// player2
         if (enable_player2 && (showingOptions == 0 && showingPausedMenu == 0)) {
+            car2.tilting = 0;
+            if (state[player2_scancode_up]) {
+                car2.tiltUp();
+                car2.tilting = 1;
+            }
+            else if (state[player2_scancode_down]) {
+                car2.tiltDown();
+                car2.tilting = 1;
+            }
+
             std::string player2_stateLeft = (state[player2_scancode_left] ? "1" : "0");
             std::string player2_stateRight = (state[player2_scancode_right] ? "1" : "0");
             std::string player2_curLeftRight = player2_stateLeft + player2_stateRight;
@@ -345,17 +373,6 @@ void GameplayInstance::handle() {
                 }
             }
 
-            if (player2_curLeftRight == "10" || player2_curLeftRight == "01") {
-                player2_prvLeftRight = player2_curLeftRight;
-            }
-
-            if (state[player2_scancode_up]) {
-                car2.tiltUp();
-            }
-            else if (state[player2_scancode_down]) {
-                car2.tiltDown();
-            }
-
             if (state[player2_scancode_boost]) {
                 car2.curSign = 1.0;
                 car2.boost(1.0);
@@ -364,10 +381,24 @@ void GameplayInstance::handle() {
                 car2.curSign = -1.0;
                 car2.boost(-1.0);
             }
+
+            if (player2_curLeftRight == "10" || player2_curLeftRight == "01") {
+                player2_prvLeftRight = player2_curLeftRight;
+            }
         }
 
         /// player1
         if (enable_player1 && (showingOptions == 0 && showingPausedMenu == 0)) {
+            car1.tilting = 0;
+            if (state[player1_scancode_up]) {
+                car1.tiltUp();
+                car1.tilting = 1;
+            }
+            else if (state[player1_scancode_down]) {
+                car1.tiltDown();
+                car1.tilting = 1;
+            }
+
             std::string player1_stateLeft = (state[player1_scancode_left] ? "1" : "0");
             std::string player1_stateRight = (state[player1_scancode_right] ? "1" : "0");
             std::string player1_curLeftRight = player1_stateLeft + player1_stateRight;
@@ -399,13 +430,6 @@ void GameplayInstance::handle() {
                 player1_prvLeftRight = player1_curLeftRight;
             }
 
-            if (state[player1_scancode_up]) {
-                car1.tiltUp();
-            }
-            else if (state[player1_scancode_down]) {
-                car1.tiltDown();
-            }
-
             if (state[player1_scancode_boost]) {
                 car1.curSign = 1.0;
                 car1.boost(1.0);
@@ -414,6 +438,7 @@ void GameplayInstance::handle() {
                 car1.curSign = -1.0;
                 car1.boost(-1.0);
             }
+
         }
         displayBackground();
 
@@ -434,32 +459,62 @@ void GameplayInstance::handle() {
                 showingPausedMenu = 1;
             }
         }
-        SDL_RenderPresent(renderer);
-        std::cerr << "UNL TIME MODE" << " " << unlTimeMode << ", " << "COUNTDOWN" << " " << countDown << "\n";
+        SDL_RenderPresent(renderer.get());
     }
 }
 
+/// no
+//void VictoryScreenInstance::init() {
+//    onVictoryScreen = 1;
+//    music = musicVictory;
+//    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+//    if (scoreA > scoreB) {
+//        s = player1_name + " " + "WON!";
+//        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), BLUE); ///
+//    }
+//    else {
+//        s = player2_name + " " + "WON!";
+//        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), ORANGE); ///
+//    }
+//
+//    winnerTexture = SDL_CreateTextureFromSurface(renderer.get(), winnerSurface); ///
+//
+//    width = winnerSurface->w; ///
+//    height = winnerSurface->h; ///
+//    rect = {960 - width/2, 286 - height/2, width, height};
+//
+//    Font = nullptr; ///
+//    TTF_CloseFont(Font); ///
+//    winnerSurface = nullptr;
+//}
+
 void VictoryScreenInstance::init() {
     onVictoryScreen = 1;
-    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+    if (music != musicVictory) {
+        music = musicVictory0;
+        Mix_HaltMusic();
+    }
+//    music = musicVictory;
+//    auto FontDeleter = [](TTF_Font* font) { TTF_CloseFont(font); };
+//    std::shared_ptr<TTF_Font> Font(TTF_OpenFont(fontPath.c_str(), 100), FontDeleter);
+
+    Font.reset(TTF_OpenFont(fontPath.c_str(), 100), TTF_CloseFont);
+
+
     if (scoreA > scoreB) {
         s = player1_name + " " + "WON!";
-        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), BLUE); ///
+        winnerSurface.reset(TTF_RenderText_Blended(Font.get(), s.c_str(), BLUE), SDL_FreeSurface);
     }
     else {
         s = player2_name + " " + "WON!";
-        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), ORANGE); ///
+        winnerSurface.reset(TTF_RenderText_Blended(Font.get(), s.c_str(), ORANGE), SDL_FreeSurface);
     }
 
-    winnerTexture = SDL_CreateTextureFromSurface(renderer, winnerSurface); ///
+    winnerTexture.reset(SDL_CreateTextureFromSurface(renderer.get(), winnerSurface.get()), SDL_DestroyTexture);
 
-    width = winnerSurface->w; ///
-    height = winnerSurface->h; ///
+    width = winnerSurface->w;
+    height = winnerSurface->h;
     rect = {960 - width/2, 286 - height/2, width, height};
-
-    Font = nullptr; ///
-    TTF_CloseFont(Font); ///
-    winnerSurface = nullptr;
 }
 
 void VictoryScreenInstance::handleButtons() { /// replay, options, menu
@@ -467,6 +522,7 @@ void VictoryScreenInstance::handleButtons() { /// replay, options, menu
         if (button.withinArea(mouseX, mouseY)) {
             button.displayImage(1);
             if (clicked) {
+                playEffectOnce(clickSound, clickChannel);
                 if (button.name != "options") {
                     currentState = button.nextState;
                     onVictoryScreen = 0;
@@ -485,7 +541,12 @@ void VictoryScreenInstance::handleButtons() { /// replay, options, menu
 
 void VictoryScreenInstance::handle() {
     init();
+    playEffectOnce(victorySound, victoryChannel);
+    addExplosion(100, 960, 286, 1);
+    addExplosion(100, 960, 286, 2);
+
     while (onVictoryScreen) {
+        playMusic();
         clicked = 0;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -504,18 +565,22 @@ void VictoryScreenInstance::handle() {
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 221, 160, 221, 255);
-        SDL_RenderClear(renderer);
+        SDL_SetRenderDrawColor(renderer.get(), 221, 160, 221, 255);
+        SDL_RenderClear(renderer.get());
 
 
         if (scoreA > scoreB) {
-            displayImage(victoryP1_Texture);
+            displayImage(victoryP1_Texture.get());
         }
         else {
-            displayImage(victoryP2_Texture);
+            displayImage(victoryP2_Texture.get());
         }
 
-        SDL_RenderCopyF(renderer, winnerTexture, NULL, &rect);
+        SDL_RenderCopyF(renderer.get(), winnerTexture.get(), NULL, &rect);
+        updateExplosion(1);
+        renderExplosion(1);
+        updateExplosion(2);
+        renderExplosion(2);
 
         if (showingOptions == 0) {
             handleButtons();
@@ -524,6 +589,6 @@ void VictoryScreenInstance::handle() {
             optionsWindow.handleButtons();
         }
 
-        SDL_RenderPresent(renderer);
+        SDL_RenderPresent(renderer.get());
     }
 }

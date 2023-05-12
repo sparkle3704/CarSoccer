@@ -48,7 +48,7 @@ void addBoost(int numParticles, Point a, Point b, Point c, Point d, int player) 
         float alpha = alpha_gen(gen);
         boostParticles[player].push_back(Particle(x, y, vx, vy, size, alpha, 0, 0));
     }
-    boostTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
+    boostTexture = SDL_CreateTexture(renderer.get(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 300, 300);
     SDL_DestroyTexture(boostTexture);
 }
 
@@ -66,25 +66,25 @@ void updateBoost(int player) {
 
 void renderBoost(int player) {
     // Set blending mode for boostParticles
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawBlendMode(renderer.get(), SDL_BLENDMODE_BLEND);
 
     // Set texture as render target
-    SDL_SetRenderTarget(renderer, boostTexture);
+    SDL_SetRenderTarget(renderer.get(), boostTexture);
 
     // Clear texture with transparent color
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_SetRenderDrawColor(renderer.get(), 0, 0, 0, 0);
 
     for (auto& particle: boostParticles[player]) {
         SDL_FRect boostRect = {particle.x - particle.size/2.0f, particle.y - particle.size/2.0f, particle.size, particle.size};
         std::array<int, 3> rgb = boostColor(particle.alpha, player);
-        SDL_SetRenderDrawColor(renderer, rgb[0], rgb[1], rgb[2], 255);
-        SDL_RenderFillRectF(renderer, &boostRect);
+        SDL_SetRenderDrawColor(renderer.get(), rgb[0], rgb[1], rgb[2], 255);
+        SDL_RenderFillRectF(renderer.get(), &boostRect);
 //        SDL_DestroyTexture(boostTexture);
     }
     // Reset render target to default
-    SDL_SetRenderTarget(renderer, nullptr);
+    SDL_SetRenderTarget(renderer.get(), nullptr);
 
     // Draw texture to screen
-    SDL_RenderCopy(renderer, boostTexture, nullptr, nullptr);
+    SDL_RenderCopy(renderer.get(), boostTexture, nullptr, nullptr);
 
 }

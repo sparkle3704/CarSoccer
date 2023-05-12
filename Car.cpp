@@ -33,7 +33,7 @@ Car::Car(float xPos, float yPos, int player):
     }
 
     int w, h;
-    SDL_QueryTexture(carTexture, NULL, NULL, &w, &h);
+    SDL_QueryTexture(carTexture.get(), NULL, NULL, &w, &h);
     float scale = width / float(w);
     height = float(h) * scale;
 
@@ -179,6 +179,7 @@ void Car::correctAngle() {
         }
         angle = fmod(angle, 360);
     }
+
     if ((angle >= 0 && angle <= 90) || (angle >= 270 && angle <= 359)) {
 //            flip = SDL_FLIP_NONE;
 //            curDir = 1;
@@ -212,11 +213,25 @@ void Car::correctAngle() {
             flip = SDL_FLIP_VERTICAL;
             clockWise = 1;
         }
+        else {
+//            if (pointing == 0) {
+//                flip = SDL_FLIP_VERTICAL;
+//                clockWise = 1;
+//            }
+//            else {
+                flip = SDL_FLIP_NONE;
+                clockWise = 0;
+////            }
+        }
     }
     else {
         if (curDir == 0) {
             flip = SDL_FLIP_NONE;
             clockWise = 0;
+        }
+        else {
+            flip = SDL_FLIP_VERTICAL;
+            clockWise = 1;
         }
     }
 }
@@ -239,7 +254,7 @@ float Car::binS(float sign) { // find biggest so that angle +- ans errorless
     return ans;
 }
 void Car::tiltDown() {
-    if (spinningClockWise == 0 && spinningCounterClockWise == 0) {
+    if (spinningClockWise == 0 && spinningCounterClockWise == 0 && collideWithGround == 0) {
         if (clockWise == 0) {
             angle += binS(1.0);
 //                angle += ROTATE_FACTOR;
@@ -250,7 +265,7 @@ void Car::tiltDown() {
         }
     }
     else {
-//            std::cerr << "Won't spin" << "\n";
+
     }
     correctAngle();
     correctPosition();
@@ -267,7 +282,7 @@ void Car::tiltDown() {
 }
 
 void Car::tiltUp() {
-    if (spinningClockWise == 0 && spinningCounterClockWise == 0) {
+    if (spinningClockWise == 0 && spinningCounterClockWise == 0 && collideWithGround == 0) {
         if (clockWise == 0) {
             angle -= binS(-1.0);
 //                angle -= ROTATE_FACTOR;
@@ -278,7 +293,7 @@ void Car::tiltUp() {
         }
     }
     else {
-//            std::cerr << "Won't spin" << "\n";
+            std::cerr << "Won't spin" << "\n";
     }
     correctAngle();
     correctPosition();
@@ -301,6 +316,14 @@ void Car::verticalFlip() {
     else {
         angle = 270 - angle + 270;
     }
+//    curDir = !curDir;
+//    pointing = !pointing;
+//    if (flip == SDL_FLIP_NONE) {
+//        flip = SDL_FLIP_VERTICAL;
+//    }
+//    else {
+//        flip = SDL_FLIP_NONE;
+//    }
 }
 
 void Car::moveRight() {
@@ -442,6 +465,7 @@ void Car::boost(float sign) {
             gravityVelocityY = GRAVITY_ACCELERATION/5;
         }
         else {
+            std::cerr << "still boosting" << "\n";
 //                playEffect(boostEndSound, 0);
             goingVelocityX = 0;
             gravityVelocityY = GRAVITY_ACCELERATION/5;
@@ -924,7 +948,7 @@ void Car::draw() {
 //        std::cerr << "jump VX = " << deltaVx << "\n";
 //        std::cerr << "jump VY = " << deltaVy << "\n";
 //        int w, h;
-//        SDL_QueryTexture(carTexture, NULL, NULL, &w, &h);
+//        SDL_QueryTexture(carTexture.get(), NULL, NULL, &w, &h);
 //
 //        float scalef = 100.0f / w;
 //        w *= scale;
@@ -940,16 +964,16 @@ void Car::draw() {
 
     SDL_FPoint carCenterPos = {xPos + width/2, yPos + height/2};
 
+//
+//    SDL_FPoint trackedPoint = {(tmp[0].x + tmp[3].x)/2, (tmp[0].y + tmp[3].y)/2};
+//    trackedPoint = {(tmp[0].x + tmp[1].x + tmp[2].x + tmp[3].x)/4, (tmp[0].y + tmp[1].y + tmp[2].y + tmp[3].y)/4};
+//    headBuffer.push_front(trackedPoint);
+//    if ((int)headBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
+//        headBuffer.pop_back();
+//    }
 
-    SDL_FPoint trackedPoint = {(tmp[0].x + tmp[3].x)/2, (tmp[0].y + tmp[3].y)/2};
-    trackedPoint = {(tmp[0].x + tmp[1].x + tmp[2].x + tmp[3].x)/4, (tmp[0].y + tmp[1].y + tmp[2].y + tmp[3].y)/4};
-    headBuffer.push_front(trackedPoint);
-    if ((int)headBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
-        headBuffer.pop_back();
-    }
-
-    SDL_FPoint __a = {tmp[1].x, tmp[1].y};
-    SDL_FPoint __b = {tmp[2].x, tmp[2].y};
+//    SDL_FPoint __a = {tmp[1].x, tmp[1].y};
+//    SDL_FPoint __b = {tmp[2].x, tmp[2].y};
 
 //        BoostParticle boostParticle = {__a, __b, flip, angle};
 //        BoostParticle boostParticle = {ParticleSystem(renderer, 100, tmp[1], tmp[2])};
@@ -967,7 +991,7 @@ void Car::draw() {
 //        for (int i = 1; i < (int)headBuffer.size(); ++i) {
 //            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 //            SDL_RenderDrawLine(renderer, headBuffer[i-1].x, headBuffer[i-1].y, headBuffer[i].x, headBuffer[i].y);
-////            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
+////            SDL_RenderCopyExF(renderer, carTexture.get(), NULL, &carRect, angle, &center, flip);
 ////            SDL_RenderPresent(renderer);
 //        }
     std::vector<Point> perpen = findPerpendicularVectors(tmp[1], tmp[0], JUMP_VELOCITY);
@@ -990,24 +1014,6 @@ void Car::draw() {
 //        std::cerr << "----------------" << "\n";
 //        std::cerr << angle << "\n";
 //        std::cerr << "correct angle = " << angle << "\n";
-    bool testThis = 0;
-    if (testThis) {
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-        for (int i = 0; i < 4; ++i) {
-//            std::cerr << "[" << tmp[i].x << ",  " << tmp[i].y << "]" << "\n";
-            std::cerr << "<" << i+1 << ">";
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-            SDL_RenderClear(renderer);
-
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            SDL_RenderDrawPoint(renderer, tmp[i].x, tmp[i].y);
-            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, SDL_FLIP_VERTICAL);
-            SDL_RenderPresent(renderer);
-            SDL_Delay(1000);
-        }
-        std::cerr << "\n";
-    }
 
 //        std::cerr << getAngle(tmp) << "\n";
 //        std::cerr << "----------------" << "\n";
@@ -1036,17 +1042,17 @@ void Car::draw() {
 //        std::cerr << "pointing = " << pointing << ", " << (pointing ? "pointing right" : "pointing left  ") << "\n";
 //        std::cerr << (flip == SDL_FLIP_VERTICAL ? "vertical flipped" : "                      ") << "\n";
 //        std::cerr << "\n";
-    SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
+    SDL_RenderCopyExF(renderer.get(), carTexture.get(), NULL, &carRect, angle, &center, flip);
 
-    for (int i = 1; i < (int)headBuffer.size(); ++i) {
-        float maxSpeed = 14.2;
-        float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
-        std::vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
-        SDL_SetRenderDrawColor(renderer, getRGB[0], getRGB[1], getRGB[2], 255);
-        SDL_RenderDrawLine(renderer, headBuffer[i-1].x, headBuffer[i-1].y, headBuffer[i].x, headBuffer[i].y);
-//            SDL_RenderCopyExF(renderer, carTexture, NULL, &carRect, angle, &center, flip);
-//            SDL_RenderPresent(renderer);
-    }
+//    for (int i = 1; i < (int)headBuffer.size(); ++i) {
+//        float maxSpeed = 14.2;
+//        float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
+//        std::vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
+//        SDL_SetRenderDrawColor(renderer.get(), getRGB[0], getRGB[1], getRGB[2], 255);
+//        SDL_RenderDrawLine(renderer.get(), headBuffer[i-1].x, headBuffer[i-1].y, headBuffer[i].x, headBuffer[i].y);
+////            SDL_RenderCopyExF(renderer, carTexture.get(), NULL, &carRect, angle, &center, flip);
+////            SDL_RenderPresent(renderer);
+//    }
     updateBoost(player);
     renderBoost(player);
 
@@ -1144,17 +1150,30 @@ void Car::jump() {
 
 void Car::setDir(bool newDir) {
 //        curDir = newDir;
+    if (spinningClockWise || spinningCounterClockWise || (tilting && collideWithGround == 0)) {
+        std::cerr << "TILTING" << "\n";
+        return;
+    }
     if (newDir != curDir) {
         if (pointing != curDir) {
 
         }
         else {
+            std::cerr << (flip == SDL_FLIP_NONE ? "NONE" : "FLIP") << "\n";
             verticalFlip();
+            std::cerr << "vertical flipped" << "\n";
+            std::cerr << (flip == SDL_FLIP_NONE ? "NONE" : "FLIP") << "\n";
         }
-//            std::cerr << "changed curDir" << "\n";
-//            verticalFlip();
-        curDir = newDir;
     }
+    else {
+        if (pointing != curDir) {
+            std::cerr << (flip == SDL_FLIP_NONE ? "NONE" : "FLIP") << "\n";
+            verticalFlip();
+            std::cerr << "vertical flipped ===================" << "\n";
+            std::cerr << (flip == SDL_FLIP_NONE ? "NONE" : "FLIP") << "\n";
+        }
+    }
+    curDir = newDir;
 }
 
 void Car::handleGroundCollision() {
@@ -1162,7 +1181,7 @@ void Car::handleGroundCollision() {
         return;
     }
 //        int width = 100, height = 50;
-//        SDL_QueryTexture(carTexture, NULL, NULL, &width, &height);
+//        SDL_QueryTexture(carTexture.get(), NULL, NULL, &width, &height);
 //
 //        float scale = 100.0f / w;
 //        w *= scale;
@@ -1173,7 +1192,7 @@ void Car::handleGroundCollision() {
 
 
 
-//        correctAngle();
+    correctAngle();
     SDL_FRect carRect = {xPos, yPos, width, height};
     std::vector<Point> tmp = getCoords(carRect, angle);
     float x1 = tmp[0].x, y1 = tmp[0].y;
@@ -1186,7 +1205,9 @@ void Car::handleGroundCollision() {
     float maxX = std::max({x1, x2, x3, x4});
     float maxY = std::max({y1, y2, y3, y4});
 
-    bool collideWithGround = 0;
+
+    collideWithGround = 0;
+    if (player == 1) std::cerr << angle << ", point: " << pointing << " dir: " << curDir << "\n";
     if (maxY >= groundY) {
         collideWithGround = 1;
         float delta = maxY - groundY;
@@ -1199,16 +1220,27 @@ void Car::handleGroundCollision() {
         yPos -= delta;
     }
 
-
-    float deltaRotate = 20;
+    float deltaRotate = 5; /// 20
     if (collideWithGround) {
-        if (angle > 0 && angle < 90) {
+        tilting = 0;
+        if (angle == 0 || angle == 180) {
+            curDir = pointing;
+        }
+        else if (angle > 0 && angle < 90) {
 //                std::cerr << "<11111111111111111>" << "\n";
             float diff = angle;
             if (deltaRotate > diff) {
                 deltaRotate = diff;
             }
             angle -= deltaRotate;
+        }
+        else if (angle == 90) {
+            if (curDir == 1) {
+                angle += deltaRotate;
+            }
+            else {
+                angle -= deltaRotate;
+            }
         }
         else if (angle > 90 && angle < 180) {
 //                std::cerr << "<22222222222222222>" << "\n";
@@ -1226,13 +1258,42 @@ void Car::handleGroundCollision() {
             }
             angle -= deltaRotate;
         }
+        else if (angle == 270) {
+            if (curDir == 1) {
+                angle -= deltaRotate;
+            }
+            else {
+                angle += deltaRotate;
+            }
+        }
         else if (angle > 270 && angle < 360) {
 //                std::cerr << "<444444444444444444>" << "\n";
-            float diff = 360 - diff;
+            float diff = 360 - angle;
             if (deltaRotate > diff) {
                 deltaRotate = diff;
             }
             angle += deltaRotate;
+        }
+        carRect = {xPos, yPos, width, height};
+        tmp = getCoords(carRect, angle);
+        x1 = tmp[0].x, y1 = tmp[0].y;
+        x2 = tmp[1].x, y2 = tmp[1].y;
+        x3 = tmp[2].x, y3 = tmp[2].y;
+        x4 = tmp[3].x, y4 = tmp[3].y;
+
+        minX = std::min({x1, x2, x3, x4});
+        minY = std::min({y1, y2, y3, y4});
+        maxX = std::max({x1, x2, x3, x4});
+        maxY = std::max({y1, y2, y3, y4});
+
+        if (maxY < groundY) {
+            float delta = groundY - maxY;
+            y1 += delta;
+            y2 += delta;
+            y3 += delta;
+            y4 += delta;
+            maxY = std::max({y1, y2, y3, y4});
+            yPos += delta;
         }
     }
     carRect = {xPos, yPos, width, height};

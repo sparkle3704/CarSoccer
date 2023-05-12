@@ -5,6 +5,7 @@
 #include "Controls.h"
 #include "PlayerScored.h"
 #include "Explosion.h"
+#include "Sounds.h"
 
 int prvScoreA = -1;
 int prvScoreB = -1;
@@ -36,7 +37,7 @@ void Render(Car& car1, Car& car2, Ball& ball) {
     car2.prvDir = car2.curDir;
 
     if (ball.yPos + ball.radius*2 <= botLeft1.y + 1e-1) { /// Front image
-       SDL_RenderCopy(renderer, frontPart_Texture, &srcRect, &dstRect);
+       SDL_RenderCopy(renderer.get(), frontPart_Texture.get(), &srcRect, &dstRect);
     }
 }
 
@@ -54,6 +55,9 @@ void reset(bool overtime) {
         overtimeBeginTime = 0;
         scoredBeginTime = 0;
         displayingScored = 0;
+        for (int i = 0; i <= 7; ++i) {
+            stopEffect(i);
+        }
     }
 
     player2_prvSign = -1, player1_prvSign = -1;
@@ -76,7 +80,7 @@ void reset(bool overtime) {
     timeElapsed = 0;
     timeLeft = 1;
 
-    timer = 1;
+    timer = 300;
     explosionParticles[1].clear();
     explosionParticles[2].clear();
 

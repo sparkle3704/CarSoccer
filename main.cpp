@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
                 break;
         }
     }
-    SDL_FreeSurface(surfaceMessage);
+//    SDL_FreeSurface(surfaceMessage);
 //    SDL_DestroyTexture(Message);
     closeEverything();
     return 0;

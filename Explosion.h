@@ -3,6 +3,7 @@
 #pragma once
 #include "Structs.h"
 #include <vector>
+#include <memory>
 
 extern std::vector<Particle> explosionParticles[3];
 void addExplosion(int numParticles, float startX, float startY, int player);

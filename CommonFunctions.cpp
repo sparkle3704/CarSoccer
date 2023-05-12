@@ -86,8 +86,8 @@ std::vector<Point> getCoords(SDL_FRect rect, float angle_degrees) {
 //int RRRR, GGGG, BBBB;
 
 void drawLine(vec2 u, vec2 v, int r, int g, int b) {
-    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-    SDL_RenderDrawLine(renderer, u.x, u.y, v.x, v.y);
+    SDL_SetRenderDrawColor(renderer.get(), r, g, b, 255);
+    SDL_RenderDrawLine(renderer.get(), u.x, u.y, v.x, v.y);
 
 //    U = u;
 //    V = v;

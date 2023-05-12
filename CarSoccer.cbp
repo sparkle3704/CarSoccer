@@ -35,7 +35,7 @@
 			<Add directory="D:/libraries/SDL2/include/SDL2" />
 		</Compiler>
 		<Linker>
-			<Add option="-lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf" />
+			<Add option="-lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer" />
 			<Add library="mingw32" />
 			<Add library="SDL2main" />
 			<Add library="SDL2.dll" />

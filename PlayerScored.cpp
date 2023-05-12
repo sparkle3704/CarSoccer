@@ -39,6 +39,36 @@ SDL_Rect overtimeRect;
 SDL_Texture* timeTexture = nullptr;
 SDL_Surface* textSurface = nullptr;
 
+void destroyAndFree() {
+    // Destroy textures
+    SDL_DestroyTexture(scoreTextureA);
+    SDL_DestroyTexture(scoreTextureB);
+    SDL_DestroyTexture(scoredTexture);
+    SDL_DestroyTexture(reminderTexture);
+    SDL_DestroyTexture(overtimeTexture);
+    SDL_DestroyTexture(timeTexture);
+
+    // Free surfaces
+    SDL_FreeSurface(surfaceMessage);
+    SDL_FreeSurface(scoredSurface);
+    SDL_FreeSurface(reminderSurface);
+    SDL_FreeSurface(overtimeSurface);
+    SDL_FreeSurface(textSurface);
+
+    // Set pointers to null
+    scoreTextureA = nullptr;
+    scoreTextureB = nullptr;
+    surfaceMessage = nullptr;
+    scoredSurface = nullptr;
+    scoredTexture = nullptr;
+    reminderSurface = nullptr;
+    reminderTexture = nullptr;
+    overtimeSurface = nullptr;
+    overtimeTexture = nullptr;
+    timeTexture = nullptr;
+    textSurface = nullptr;
+}
+
 std::string inMidAirText = "0:00";
 int getFontSize(int score) {
     if (score < 0) {
@@ -76,7 +106,7 @@ void printPlayerScored(int player) {
     scoredBeginTime = SDL_GetTicks();
 
     std::string s;
-    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+    TTF_Font* Font = TTF_OpenFont(fontPath.c_str(), 100); ///
     if (player == 1) {
         s = player1_name + " SCORED";
         scoredSurface = TTF_RenderText_Blended(Font, s.c_str(), BLUE); ///
@@ -86,7 +116,7 @@ void printPlayerScored(int player) {
         scoredSurface = TTF_RenderText_Blended(Font, s.c_str(), ORANGE); ///
     }
 
-    scoredTexture = SDL_CreateTextureFromSurface(renderer, scoredSurface); ///
+    scoredTexture = SDL_CreateTextureFromSurface(renderer.get(), scoredSurface); ///
 
     int text_width = scoredSurface->w; ///
     int text_height = scoredSurface->h; ///
@@ -104,11 +134,11 @@ void printPlayerScored(int player) {
 void printReminder() {
     reminderBeginTime = SDL_GetTicks();
     std::string s;
-    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+    TTF_Font* Font = TTF_OpenFont(fontPath.c_str(), 100); ///
     s = "1 MINUTE REMAINING";
     reminderSurface = TTF_RenderText_Blended(Font, s.c_str(), RED); ///
 
-    reminderTexture = SDL_CreateTextureFromSurface(renderer, reminderSurface); ///
+    reminderTexture = SDL_CreateTextureFromSurface(renderer.get(), reminderSurface); ///
 
     int text_width = reminderSurface->w; ///
     int text_height = reminderSurface->h; ///
@@ -124,11 +154,11 @@ void printReminder() {
 void printOvertime() {
     overtimeBeginTime = SDL_GetTicks();
     std::string s;
-    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
+    TTF_Font* Font = TTF_OpenFont(fontPath.c_str(), 100); ///
     s = "OVERTIME!";
     overtimeSurface = TTF_RenderText_Blended(Font, s.c_str(), RED); ///
 
-    overtimeTexture = SDL_CreateTextureFromSurface(renderer, overtimeSurface); ///
+    overtimeTexture = SDL_CreateTextureFromSurface(renderer.get(), overtimeSurface); ///
 
     int text_width = overtimeSurface->w; ///
     int text_height = overtimeSurface->h; ///
@@ -165,7 +195,7 @@ std::pair<SDL_FRect, float> scorePlayer(int player, int w, int h) {
 void displayScore(int score, int player) {
     if ((player == 1 && score != prvScoreA) || (player == 2 && score != prvScoreB)) {
         int fontSize =  getFontSize(score);
-        Font = TTF_OpenFont(fontPath.c_str(), fontSize);
+        TTF_Font* Font = TTF_OpenFont(fontPath.c_str(), fontSize);
         std::string s = toString(score);
         surfaceMessage = TTF_RenderText_Blended(Font, s.c_str(), WHITE);
         Font = nullptr;
@@ -175,11 +205,11 @@ void displayScore(int score, int player) {
 
         if (player == 1) {
             if (scoreTextureA) SDL_DestroyTexture(scoreTextureA);
-            scoreTextureA = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+            scoreTextureA = SDL_CreateTextureFromSurface(renderer.get(), surfaceMessage);
             prvScoreA = score;
         } else {
             if (scoreTextureB) SDL_DestroyTexture(scoreTextureB);
-            scoreTextureB = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+            scoreTextureB = SDL_CreateTextureFromSurface(renderer.get(), surfaceMessage);
             prvScoreB = score;
         }
 //        SDL_FreeSurface(surfaceMessage);
@@ -188,9 +218,9 @@ void displayScore(int score, int player) {
     std::pair<SDL_FRect, float> tmp = scorePlayer(player, messageTextWidth[player], messageTextHeight[player]);
     SDL_FRect Message_rect = tmp.first;
     if (player == 1) {
-        SDL_RenderCopyExF(renderer, scoreTextureA, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
+        SDL_RenderCopyExF(renderer.get(), scoreTextureA, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
     } else {
-        SDL_RenderCopyExF(renderer, scoreTextureB, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
+        SDL_RenderCopyExF(renderer.get(), scoreTextureB, NULL, &Message_rect, tmp.second, NULL, SDL_FLIP_NONE);
     }
 }
 
@@ -234,6 +264,12 @@ void displayTime() { /// printReminder, Scored, Time
     /// Time
     if (unlTimeMode == 0) {
         if (timeLeft <= 0 && countDown && !inOvertime) {
+            if (scoreA != scoreB) {
+                ball.resetBall(); ///
+                ball.xPos = WINDOW_WIDTH*0.5 - ball.radius; ///
+                ball.yPos = groundY - 2*ball.radius; ///
+                ball.inMidAir = 0;
+            }
             if (ball.inMidAir) {
                 timeLeft = 0;
                 minutes = 0, seconds = 0;
@@ -241,42 +277,134 @@ void displayTime() { /// printReminder, Scored, Time
             else {
                 if (scoreA != scoreB) {
                     timer = 0;
-                    if (currentTime - scoredBeginTime > 3500) {
-                        std::cerr << "SHOWING SCOREBOARD" << "\n";
-                        gameplay.onGameplay = 0;
-                        currentState = VICTORY;
-                        /// showScoreBoard
-                        /// show menu
-                        /// immediately
+                    if (noGroundMode) {
+                        std::cerr << "wtf no groundddd =====================================================================================" << "\n";
+
+//                        if (ball.xPos + float(ball.radius) != float(WINDOW_WIDTH)*0.5) {
+//                            if (music != musicVictory0) {
+//                                music = musicVictory0;
+//                                Mix_HaltMusic();
+//                            }
+//                            gameplay.onGameplay = 0;
+//                            currentState = VICTORY;
+//                        }
+
+                        if (currentTime - scoredBeginTime > 3500) {
+                            std::cerr << "SHOWING SCOREBOARD" << "\n";
+                            gameplay.onGameplay = 0;
+                            currentState = VICTORY;
+                            /// showScoreBoard
+                            /// show menu
+                            /// immediately
+                        }
+                        else {
+                            if (currentTime - scoredBeginTime <= 3*1000) {
+                                if (music != musicVictory) {
+                                    music = musicVictory;
+                                    Mix_HaltMusic();
+                                }
+                            }
+                            else {
+                                if (music != musicVictory0) {
+                                    music = musicVictory0;
+                                    Mix_HaltMusic();
+                                }
+                            }
+
+
+                            /// make it unable to score
+//                            ball.resetBall(); ///
+//                            ball.xPos = WINDOW_WIDTH*0.5 - ball.radius; ///
+//                            ball.yPos = groundY - 2*ball.radius; ///
+    //                        ball.inMidAir = 0;
+                            ///
+                        }
+                        if (currentTime - scoredBeginTime <= 500) {
+                            std::cerr << "ADDING EXPLOSIONNNNNNNNNNNNNNNN" << "\n";
+                            addExplosion(50, 0, WINDOW_HEIGHT*0.5, 1);
+                            addExplosion(50, WINDOW_WIDTH, WINDOW_HEIGHT*0.5, 2);
+                            updateExplosion(1);
+                            renderExplosion(1);
+                            updateExplosion(2);
+                            renderExplosion(2);
+                        }
                     }
                     else {
-                        /// make it unable to score
-                        ball.resetBall(); ///
-                        ball.xPos = WINDOW_WIDTH*0.5 - ball.radius; ///
-                        ball.yPos = groundY - 2*ball.radius; ///
-//                        ball.inMidAir = 0;
+                        if (currentTime - scoredBeginTime > 3500) {
+                            std::cerr << "SHOWING SCOREBOARD" << "\n";
+                            gameplay.onGameplay = 0;
+                            currentState = VICTORY;
+                            /// showScoreBoard
+                            /// show menu
+                            /// immediately
+                        }
+                        else {
+                            if (music != musicVictory) {
+                                music = musicVictory;
+                                Mix_HaltMusic();
+                            }
+
+                            /// make it unable to score
+    //                        ball.inMidAir = 0;
+                            ///
+                        }
+                        if (currentTime - scoredBeginTime <= 500) {
+//                                std::cerr << "EQUALL" << "\n";
+            //                    addExplosion(50, WINDOW_WIDTH*0.5, WINDOW_HEIGHT*0.5, 1);
+            //                    addExplosion(50, WINDOW_WIDTH*0.5, WINDOW_HEIGHT*0.5, 2);
+
+
+                            addExplosion(50, 0, WINDOW_HEIGHT*0.5, 1);
+                            addExplosion(50, WINDOW_WIDTH, WINDOW_HEIGHT*0.5, 2);
+                            updateExplosion(1);
+                            renderExplosion(1);
+                            updateExplosion(2);
+                            renderExplosion(2);
+                        }
                     }
+
 
                 }
                 else {
-                    std::cerr << "ENTERING OVERTIME!" << "\n";
-                    printOvertime();
-                    playEffectOnce(overtimeSound, overtimeChannel);
-                    reset(1);
-                    countDown = 0;
-                    inOvertime = 1;
+                    if (noGroundMode == 0 || ball.xPos + ball.radius != WINDOW_WIDTH*0.5) {
+                        std::cerr << "ENTERING OVERTIME!" << "\n";
+                        printOvertime();
+                        playEffectOnce(overtimeSound, overtimeChannel);
+                        reset(1);
+                        countDown = 0;
+                        inOvertime = 1;
+                    }
+
                 }
             }
         }
+//        std::cerr << ball.inMidAir << " " << scoreA << " " << scoreB << " " << bool(scoreA!=scoreB) << "\n";
+//        if (ball.inMidAir == 0 && scoreA != scoreB) {
+//            gameplay.onGameplay = 0;
+//            currentState = VICTORY;
+//        }
         if (inOvertime && scoreA != scoreB) {
             timer = 0;
             ball.resetBall(); ///
             ball.xPos = WINDOW_WIDTH*0.5 - ball.radius; ///
             ball.yPos = groundY - 2*ball.radius; ///
+            if (noGroundMode) {
+                if (music != musicVictory0) {
+                    music = musicVictory0;
+                    Mix_HaltMusic();
+                }
+            }
+            else {
+                if (music != musicVictory) {
+                    Mix_HaltMusic();
+                    music = musicVictory;
+                }
+            }
             if (currentTime - scoredBeginTime <= 500) {
                 std::cerr << "EQUALL" << "\n";
 //                    addExplosion(50, WINDOW_WIDTH*0.5, WINDOW_HEIGHT*0.5, 1);
 //                    addExplosion(50, WINDOW_WIDTH*0.5, WINDOW_HEIGHT*0.5, 2);
+
 
                 addExplosion(50, 0, WINDOW_HEIGHT*0.5, 1);
                 addExplosion(50, WINDOW_WIDTH, WINDOW_HEIGHT*0.5, 2);
@@ -285,7 +413,7 @@ void displayTime() { /// printReminder, Scored, Time
                 updateExplosion(2);
                 renderExplosion(2);
             }
-            if (currentTime - scoredBeginTime > 5000) {
+            if (currentTime - scoredBeginTime > 3500) { /// 5000 /// fix this
                 gameplay.onGameplay = 0;
                 currentState = VICTORY;
                 /// showscoreboard
@@ -300,33 +428,33 @@ void displayTime() { /// printReminder, Scored, Time
     }
 
     std::string timeText = toString(minutes) + ":" + (seconds <= 9 ? "0" : "") + toString(seconds); ///
-    Font = TTF_OpenFont(fontPath.c_str(), 50); ///
+    TTF_Font* Font = TTF_OpenFont(fontPath.c_str(), 50); ///
     textSurface = TTF_RenderText_Blended(Font, timeText.c_str(), { 255, 255, 255 }); ///
     Font = nullptr; ///
     TTF_CloseFont(Font); ///
 
-    timeTexture = SDL_CreateTextureFromSurface(renderer, textSurface); ///
+    timeTexture = SDL_CreateTextureFromSurface(renderer.get(), textSurface); ///
 
     int text_width = textSurface->w; ///
     int text_height = textSurface->h; ///
 
     SDL_Rect renderQuad = { 962 - text_width/ 2, 24 - text_height/ 2, text_width, text_height };
 
-    SDL_RenderCopy(renderer, timeTexture, NULL, &renderQuad);
+    SDL_RenderCopy(renderer.get(), timeTexture, NULL, &renderQuad);
 
 
     if (scoredTexture != nullptr && currentTime - scoredBeginTime <= 3*1000) {
         displayingScored = 1;
-        SDL_RenderCopy(renderer, scoredTexture, NULL, &scoredRect);
+        SDL_RenderCopy(renderer.get(), scoredTexture, NULL, &scoredRect);
     }
     else {
         displayingScored = 0;
         if (reminderTexture != nullptr && currentTime - reminderBeginTime <= 3*1000) {
-            SDL_RenderCopy(renderer, reminderTexture, NULL, &reminderRect);
+            SDL_RenderCopy(renderer.get(), reminderTexture, NULL, &reminderRect);
         }
         if (overtimeTexture != nullptr && currentTime - overtimeBeginTime <= 3*1000) {
             displayingOvertime = 1;
-            SDL_RenderCopy(renderer, overtimeTexture, NULL, &overtimeRect);
+            SDL_RenderCopy(renderer.get(), overtimeTexture, NULL, &overtimeRect);
         }
     }
 
@@ -367,13 +495,13 @@ void displayInMidAir(Ball& ball) {
             startInMidAir = -1;
         }
         if (displayingScored) {
-            fontOutline = TTF_OpenFont(fontPath.c_str(), 25); ///
+            TTF_Font* fontOutline = TTF_OpenFont(fontPath.c_str(), 25); ///
             TTF_SetFontOutline(fontOutline, 2);
             inMidAirSurface = TTF_RenderText_Blended(fontOutline, inMidAirText.c_str(), BLACK); ///
             fontOutline = nullptr; ///
             TTF_CloseFont(fontOutline); ///
 
-            inMidAirTexture = SDL_CreateTextureFromSurface(renderer, inMidAirSurface); ///
+            inMidAirTexture = SDL_CreateTextureFromSurface(renderer.get(), inMidAirSurface); ///
 
             int text_width = inMidAirSurface->w; ///
             int text_height = inMidAirSurface->h; ///
@@ -381,16 +509,16 @@ void displayInMidAir(Ball& ball) {
             SDL_FRect renderQuad = { 960 - text_width/ 2, 90 - text_height/ 2, text_width, text_height };
 
             if (elapsed != 0 || displayingScored) {
-                SDL_RenderCopyF(renderer, inMidAirTexture, NULL, &renderQuad);
+                SDL_RenderCopyF(renderer.get(), inMidAirTexture, NULL, &renderQuad);
             }
         }
 
-        Font = TTF_OpenFont(fontPath.c_str(), 25); ///
+        TTF_Font* Font = TTF_OpenFont(fontPath.c_str(), 25); ///
         inMidAirSurface = TTF_RenderText_Blended(Font, inMidAirText.c_str(), textColor); ///
         Font = nullptr; ///
         TTF_CloseFont(Font); ///
 
-        inMidAirTexture = SDL_CreateTextureFromSurface(renderer, inMidAirSurface); ///
+        inMidAirTexture = SDL_CreateTextureFromSurface(renderer.get(), inMidAirSurface); ///
 
         int text_width = inMidAirSurface->w; ///
         int text_height = inMidAirSurface->h; ///
@@ -398,7 +526,7 @@ void displayInMidAir(Ball& ball) {
         SDL_Rect renderQuad = { 960 - text_width/ 2, 90 - text_height/ 2, text_width, text_height };
 
         if (elapsed != 0 || displayingScored) {
-            SDL_RenderCopy(renderer, inMidAirTexture, NULL, &renderQuad);
+            SDL_RenderCopy(renderer.get(), inMidAirTexture, NULL, &renderQuad);
         }
     }
     else {

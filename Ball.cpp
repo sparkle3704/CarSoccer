@@ -35,21 +35,21 @@ void Ball::draw() {
     SDL_FPoint ballCenter = {xPos + radius, yPos + radius};
 
     SDL_FPoint center = {radius, radius};
-    SDL_FPoint trackedPoint = ballCenter;
-    centerBuffer.push_front(trackedPoint);
-    if ((int)centerBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
-        centerBuffer.pop_back();
-    }
+//    SDL_FPoint trackedPoint = ballCenter;
+//    centerBuffer.push_front(trackedPoint);
+//    if ((int)centerBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
+//        centerBuffer.pop_back();
+//    }
 
-    for (int i = 1; i < (int)centerBuffer.size(); ++i) {
-
-        float maxSpeed = 14.2;
-        float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
-        std::vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
-        SDL_SetRenderDrawColor(renderer, getRGB[0], getRGB[1], getRGB[2], 255);
-        SDL_RenderDrawLine(renderer, centerBuffer[i-1].x, centerBuffer[i-1].y, centerBuffer[i].x, centerBuffer[i].y);
-
-    }
+//    for (int i = 1; i < (int)centerBuffer.size(); ++i) {
+//
+//        float maxSpeed = 14.2;
+//        float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
+//        std::vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
+//        SDL_SetRenderDrawColor(renderer.get(), getRGB[0], getRGB[1], getRGB[2], 255);
+//        SDL_RenderDrawLine(renderer.get(), centerBuffer[i-1].x, centerBuffer[i-1].y, centerBuffer[i].x, centerBuffer[i].y);
+//
+//    }
 
     SDL_FRect ballRect = {xPos, yPos, radius*2, radius*2};
     std::vector<Point> tmp = getCoords(ballRect, angle);
@@ -63,7 +63,7 @@ void Ball::draw() {
     float maxX = std::max({x1, x2, x3, x4});
     float maxY = std::max({y1, y2, y3, y4});
 
-    SDL_RenderCopyExF(renderer, ballTexture, NULL, &ballRect, angle, &center, SDL_FLIP_NONE);
+    SDL_RenderCopyExF(renderer.get(), ballTexture.get(), NULL, &ballRect, angle, &center, SDL_FLIP_NONE);
     updateExplosion(1);
     renderExplosion(1);
     updateExplosion(2);
@@ -238,20 +238,20 @@ bool Ball::Chk2(vec2 A, vec2 B, bool down) {
 }
 
 void Ball::moveBall() {
-    drawLine(topRight1, botRight1, 255, 4, 242);
-    drawLine(botRight1, botLeft1, 255, 4, 242);
-    drawLine(botLeft1, topLeft1, 255, 4, 242);
-    drawLine(topLeft1, topRight1, 255, 4, 242);
-
-    drawLine(topRight2, botRight2, 255, 4, 242);
-    drawLine(botRight2, botLeft2, 255, 4, 242);
-    drawLine(botLeft2, topLeft2, 255, 4, 242);
-    drawLine(topLeft2, topRight2, 255, 4, 242);
-
-    drawLine(floorBackGoal1, botLeft1, 255, 4, 242);
-    drawLine(botRight2, floorBackGoal2, 255, 4, 242);
-    drawLine(ceilBackGoal1, topLeft1, 255, 4, 242);
-    drawLine(topRight2, ceilBackGoal2, 255, 4, 242);
+//    drawLine(topRight1, botRight1, 255, 4, 242);
+//    drawLine(botRight1, botLeft1, 255, 4, 242);
+//    drawLine(botLeft1, topLeft1, 255, 4, 242);
+//    drawLine(topLeft1, topRight1, 255, 4, 242);
+//
+//    drawLine(topRight2, botRight2, 255, 4, 242);
+//    drawLine(botRight2, botLeft2, 255, 4, 242);
+//    drawLine(botLeft2, topLeft2, 255, 4, 242);
+//    drawLine(topLeft2, topRight2, 255, 4, 242);
+//
+//    drawLine(floorBackGoal1, botLeft1, 255, 4, 242);
+//    drawLine(botRight2, floorBackGoal2, 255, 4, 242);
+//    drawLine(ceilBackGoal1, topLeft1, 255, 4, 242);
+//    drawLine(topRight2, ceilBackGoal2, 255, 4, 242);
 
     accelerationX = carBallCollisionDragAccelerationX*0;
     accelerationY = carBallCollisionDragAccelerationY*0 + initialGravityAccelerationY;
@@ -338,6 +338,7 @@ void Ball::moveBall() {
                         droppedOn = 0;
                     }
                     resetBall();
+                    inMidAir = 0;
                 }
             }
             else {
@@ -372,7 +373,7 @@ void Ball::moveBall() {
             printPlayerScored(2);
             ++scoreB;
             addExplosion(1000, xPos, yPos, 2);
-            if (inOvertime) {
+            if (inOvertime || (timer == 0 && scoreA != scoreB)) {
                 addExplosion(1000, 1920 - xPos, yPos, 1);
                 resetBall();
                 xPos = WINDOW_WIDTH*0.5 - radius;
@@ -393,7 +394,7 @@ void Ball::moveBall() {
             ++scoreA;
             ball.inMidAir = 0;
             addExplosion(1000, xPos, yPos, 1);
-            if (inOvertime) {
+            if (inOvertime || (timer == 0 && scoreA != scoreB)) {
                 addExplosion(1000, 1920 - xPos, yPos, 2);
                 resetBall();
                 xPos = WINDOW_WIDTH*0.5 - radius;

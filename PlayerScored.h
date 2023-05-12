@@ -60,4 +60,6 @@ extern SDL_Texture* inMidAirTexture;
 
 void displayInMidAir(Ball& ball);
 
+extern void destroyAndFree();
+
 #endif // PLAYERSCORED_H_INCLUDED

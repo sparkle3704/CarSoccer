@@ -36,12 +36,12 @@ bool intersectCarBall(const obb a, const sphere b, vec2& collision_normal, vec2&
     p = nearestPointOnOBB(a, b.center);
     vec2 v = p - b.center;
     if (v.length() <= b.radius) {
-        drawLine(p, b.center, 0, 128, 0);
+//        drawLine(p, b.center, 0, 128, 0);
         collision_normal = v.normalized();
         return 1;
     }
     else {
-        drawLine(p, b.center, 255, 0, 0);
+//        drawLine(p, b.center, 255, 0, 0);
         return 0;
     }
 }
@@ -74,10 +74,10 @@ obb carToObb(Car car) {
     result.halfHeight = half_height;
     result.angle = theta;
 
-    drawLine(vec2(x1, y1), vec2(x2, y2), 0, 255, 0);
-    drawLine(vec2(x2, y2), vec2(x3, y3), 0, 255, 0);
-    drawLine(vec2(x3, y3), vec2(x4, y4), 0, 255, 0);
-    drawLine(vec2(x4, y4), vec2(x1, y1), 0, 255, 0);
+//    drawLine(vec2(x1, y1), vec2(x2, y2), 0, 255, 0);
+//    drawLine(vec2(x2, y2), vec2(x3, y3), 0, 255, 0);
+//    drawLine(vec2(x3, y3), vec2(x4, y4), 0, 255, 0);
+//    drawLine(vec2(x4, y4), vec2(x1, y1), 0, 255, 0);
 
     return result;
 }
