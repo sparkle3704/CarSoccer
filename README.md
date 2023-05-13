@@ -60,7 +60,9 @@ Hitting **ESC** brings up three buttons: **RESUME, OPTIONS, EXIT**
 * **Resume** resumes the game.
 * **OPTIONS** opens up the **Options Window** 
 * **EXIT** returns to the **Title Screen**.
-![gameplayOptionsWindow](https://github.com/sparkle3704/CarSoccer/assets/125803874/04c73b74-9d50-43fc-b856-8e17de1fb037)
+
+![gameplayOptionsWindow](https://github.com/sparkle3704/CarSoccer/assets/125803874/7f93243c-4848-4d8c-bdc1-ecb5e60a0718)
+
 
 ## Victory Screen
 This screen shows the winner of the match. 
