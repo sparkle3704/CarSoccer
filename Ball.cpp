@@ -13,7 +13,7 @@
 #include "Stats.h"
 
 bool noGroundMode = 0;
-Ball ball(0, 0, 0);
+Ball ball;
 Ball::Ball(float xPos, float yPos, float radius):
     xPos(xPos), yPos(yPos), radius(radius) {
 
@@ -35,21 +35,6 @@ void Ball::draw() {
     SDL_FPoint ballCenter = {xPos + radius, yPos + radius};
 
     SDL_FPoint center = {radius, radius};
-//    SDL_FPoint trackedPoint = ballCenter;
-//    centerBuffer.push_front(trackedPoint);
-//    if ((int)centerBuffer.size() > MAX_HEAD_TRAIL_LENGTH) {
-//        centerBuffer.pop_back();
-//    }
-
-//    for (int i = 1; i < (int)centerBuffer.size(); ++i) {
-//
-//        float maxSpeed = 14.2;
-//        float curSpeed = sqrt((velocityX*velocityX) + (velocityY*velocityY));
-//        std::vector<int> getRGB = calculateColor(curSpeed, maxSpeed);
-//        SDL_SetRenderDrawColor(renderer.get(), getRGB[0], getRGB[1], getRGB[2], 255);
-//        SDL_RenderDrawLine(renderer.get(), centerBuffer[i-1].x, centerBuffer[i-1].y, centerBuffer[i].x, centerBuffer[i].y);
-//
-//    }
 
     SDL_FRect ballRect = {xPos, yPos, radius*2, radius*2};
     std::vector<Point> tmp = getCoords(ballRect, angle);
@@ -81,7 +66,7 @@ void Ball::handleSpin() {
             float deltaX = (xPos - prvXpos);
             omega = deltaX*stiff;
             if (actuallyTouchingDown) {
-                std::cerr << "adding Omega" << " " << omega << "======================\n";
+
             }
         }
         else if (xPos <= 0 && (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y))) { /// touchLeft
@@ -89,19 +74,16 @@ void Ball::handleSpin() {
             omega = deltaY*stiff;
         }
         else if (xPos + 2*radius >= WINDOW_WIDTH && (!(yPos >= topLeft1.y && yPos + 2*radius <= botLeft1.y))) { /// touchRight
-//            std::cerr << "right wall" << "\n";
             float deltaY = yPos - prvYpos;
             omega = -deltaY*stiff;
         }
         else if (yPos <= 0 || actuallyTouchingUp) { /// touchUp
             float deltaX = (xPos - prvXpos);
-//            angle += deltaX;
             omega = deltaX*stiff;
         }
         else { /// midAir
             omega *= dampening;
         }
-//        std::cerr << "omega = " << omega << "\n";
         angle += omega;
         prvXpos = xPos;
         prvYpos = yPos;
@@ -216,13 +198,11 @@ bool Ball::Chk2(vec2 A, vec2 B, bool down) {
     float d1 = distance(A.x, A.y, pointOfContact.x, pointOfContact.y);
     float d2 = distance(B.x, B.y, pointOfContact.x, pointOfContact.y);
     float dAB = distance(A.x, A.y, B.x, B.y);
-//    std::cerr << orientation(A, B, center) << " " << (orientation(A, B, center) == 1 ? "clockwise" : "counterclockwise") << "\n";
     if (d1 + d2 - dAB == 0) {
         float dist = distance(center.x, center.y, pointOfContact.x, pointOfContact.y);
         if (dist <= radius) {
 
             if (orientation(A, B, center) == type && type*velocityY >= 0) {
-                std::cerr << "NOT CLOCKWISE, OKE" << "\n";
                 float delta = radius - dist;
                 vec2 newPos = {xPos, yPos};
                 newPos = newPos + (center - pointOfContact).normalized()*delta*type;
@@ -230,9 +210,7 @@ bool Ball::Chk2(vec2 A, vec2 B, bool down) {
                 yPos = newPos.y;
                 return 1;
             }
-
         }
-
     }
     return 0;
 }
@@ -298,19 +276,7 @@ void Ball::moveBall() {
        (orientation(topRight2, ceilBackGoal2, vec2(xPos + radius, yPos)) != 1) && /// -1                    7
        (orientation(botRight2, floorBackGoal2, vec2(xPos + radius, yPos + 2*radius)) != -1)) ||  /// 1      8
         actuallyTouchingDown || actuallyTouchingUp))) { /// 1
-//            std::cerr << "OUTSIDE GOAL BOX ----------------------------------------------------" << "\n";
-            int result1 = orientation(topLeft1, topRight1, vec2(xPos + radius, yPos));
-            int result2 = orientation(botLeft1, botRight1, vec2(xPos + radius, yPos + 2*radius));
-            int result3 = orientation(floorBackGoal1, botLeft1, vec2(xPos + radius, yPos + 2*radius));
-            int result4 = orientation(ceilBackGoal1, topLeft1, vec2(xPos + radius, yPos));
-            int result5 = orientation(topLeft2, topRight2, vec2(xPos + radius, yPos));
-            int result6 = orientation(botLeft2, botRight2, vec2(xPos + radius, yPos + 2*radius));
-            int result7 = orientation(topRight2, ceilBackGoal2, vec2(xPos + radius, yPos));
-            int result8 = orientation(botRight2, floorBackGoal2, vec2(xPos + radius, yPos + 2*radius));
-            int result9 = actuallyTouchingDown ? 1 : 0;
-            int result10 = actuallyTouchingUp ? 1 : 0;
 
-//            std::cout << result1 << " " << result2 << " " << result3 << " " << result4 << " " << result5 << " " << result6 << " " << result7 << " " << result8 << " " << result9 << " " << result10 << std::endl;
             if (xPos < 0) { /// left
                 xPos = 0;
                 restitution = RESTITUTION;
@@ -360,7 +326,6 @@ void Ball::moveBall() {
             }
     }
     else {
-//        std::cerr << "WITHIN GOAL BOX" << "\n";
         if (xPos + 2*radius < botLeft1.x) {
             xPos = botLeft1.x - 2*radius;
             restitution = RESTITUTION;
@@ -368,12 +333,10 @@ void Ball::moveBall() {
             velocityY *= -RESTITUTION*3;
             playEffectOnce(explosionSound, explosionChannel);
             ball.inMidAir = 0;
-//                Mix_PlayChannel(-1, explosionSound, 0);
-//            std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p2 scores
             printPlayerScored(2);
             ++scoreB;
             addExplosion(1000, xPos, yPos, 2);
-            if (inOvertime || (timer == 0 && scoreA != scoreB)) {
+            if (inOvertime || (timeLeft <= 0 && countDown && scoreA != scoreB)) {
                 addExplosion(1000, 1920 - xPos, yPos, 1);
                 resetBall();
                 xPos = WINDOW_WIDTH*0.5 - radius;
@@ -390,11 +353,10 @@ void Ball::moveBall() {
             velocityX *= -RESTITUTION*3;
             velocityY *= -RESTITUTION*3;
             playEffectOnce(explosionSound, explosionChannel);
-//            std::cerr << "EXPLOSIONNNNN!!!!!!!!!!!!!!" << "\n"; /// p1 scores
             ++scoreA;
             ball.inMidAir = 0;
             addExplosion(1000, xPos, yPos, 1);
-            if (inOvertime || (timer == 0 && scoreA != scoreB)) {
+            if (inOvertime || (timeLeft <= 0 && countDown && scoreA != scoreB)) {
                 addExplosion(1000, 1920 - xPos, yPos, 2);
                 resetBall();
                 xPos = WINDOW_WIDTH*0.5 - radius;
@@ -410,5 +372,3 @@ void Ball::moveBall() {
 
     handleSpin();
 }
-
-//ball = Ball(WINDOW_WIDTH/2 - 5, WINDOW_HEIGHT/3, 25);

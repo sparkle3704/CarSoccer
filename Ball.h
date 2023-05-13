@@ -9,6 +9,7 @@
 
 class Ball {
 public:
+    Ball() {};
     Ball(float xPos, float yPos, float radius);
     float xPos;
     float yPos;

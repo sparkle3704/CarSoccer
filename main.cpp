@@ -21,15 +21,12 @@ int main(int argc, char* argv[]) {
     while (isRunning) {
         switch (currentState) {
             case TITLE_SCREEN:
-                std::cerr << "titleScreen" << "\n";
                 titleScreen.handle();
                 break;
             case GAMEPLAY:
-                std::cerr << "gameplay" << "\n";
                 gameplay.handle();
                 break;
             case VICTORY:
-                std::cerr << "scoreboard" << "\n";
                 victoryScreen.handle();
                 break;
             case EXIT:
@@ -37,8 +34,7 @@ int main(int argc, char* argv[]) {
                 break;
         }
     }
-//    SDL_FreeSurface(surfaceMessage);
-//    SDL_DestroyTexture(Message);
+
     closeEverything();
     return 0;
 }

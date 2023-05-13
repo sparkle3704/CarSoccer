@@ -116,13 +116,11 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
     vec2 collision_normal;
     vec2 p;
     if (intersectCarBall(car_obb, ball_sphere, collision_normal, p)) {
-//
         float carCenterX = center_x;
         float carCenterY = center_y;
 
         // Calculate the std::vector from the point of contact to the center of the ball
         vec2 contactPoint = nearestPointOnOBB(car_obb, ball_sphere.center);
-//        vec2 normalizedContactVector = (vec2(carCenterX, carCenterY) - contactPoint).normalized(); //
         vec2 normalizedContactVector = (ball_sphere.center - contactPoint).normalized(); //
 
             vec2 ballVelocity = vec2(ball.velocityX, ball.velocityY);
@@ -142,7 +140,6 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
             if (abs(j) > 100) {
                 playEffectOnce(ballHitSound, ballHitChannel);
             }
-//            std::cerr << "j = " << j << "\n";
             // apply impulse
             vec2 impulse = normalizedContactVector*j;
             vec2 ballImpulse = impulse * (1.0f / ball.mass);
@@ -162,10 +159,6 @@ void handleCollisionCarBall(Car& car, Ball& ball) {
 //            car.velocityX = carImpulse.x;
 //            car.velocityY = carImpulse.y;
         }
-//            vec2 separation = normalizedContactVector * (ball.radius - distance(contactPoint, vec2(carCenterX, carCenterY)));
-//            vec2 newBallPosition = vec2(ball.xPos, ball.yPos) - separation;
-//            ball.xPos = newBallPosition.x;
-//            ball.yPos = newBallPosition.y;
 
         float dist = distance(vec2(ball_sphere.center), contactPoint);
         if (dist < ball.radius) {

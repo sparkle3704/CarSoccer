@@ -14,27 +14,14 @@ std::mt19937 gen(rd());
 std::vector<Particle> boostParticles[3];
 SDL_Texture* boostTexture = nullptr;
 void addBoost(int numParticles, Point a, Point b, Point c, Point d, int player) {
-
-//    std::uniform_real_distribution<float> v_gen(1, 1);
-//    std::uniform_real_distribution<float> size_gen(1, 20);
-//    std::uniform_real_distribution<float> alpha_gen(1, 1);
-//    std::uniform_real_distribution<float> x_gen(min(a.x, b.x), max(a.x, b.x));
-//    std::uniform_real_distribution<float> y_gen(min(a.y, b.y), max(a.y, b.y));
-
-//    std::uniform_real_distribution<float> v_gen(1, 1);
     std::uniform_real_distribution<float> size_gen(2, 15);
     std::uniform_real_distribution<float> alpha_gen(256, 256);
     std::uniform_real_distribution<float> x_gen(std::min(a.x, b.x), std::max(a.x, b.x));
     std::uniform_real_distribution<float> y_gen(std::min(a.y, b.y), std::max(a.y, b.y));
-//    std::uniform_real_distribution<float> v_gen(5, 15);
     std::uniform_real_distribution<float> v_gen(1, 20);
 
     vec2 horvec = vec2({c.x - d.x, c.y - d.y}).normalized();
     for (int i = 1; i <= numParticles; ++i) {
-//        float x = x_gen(gen);
-//        float y = y_gen(gen);
-//        float vx = vx_gen(gen);
-//        float vy = vy_gen(gen);
 
         float v = v_gen(gen);
         vec2 vxy = horvec*v;
@@ -86,5 +73,4 @@ void renderBoost(int player) {
 
     // Draw texture to screen
     SDL_RenderCopy(renderer.get(), boostTexture, nullptr, nullptr);
-
 }

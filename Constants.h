@@ -7,11 +7,6 @@ extern const int WINDOW_WIDTH;
 extern const int WINDOW_HEIGHT;
 extern const float RESTITUTION;
 
-//vec2 topLeft1, topRight1, botLeft1, botRight1, floorBackGoal1, ceilBackGoal1;
-//vec2 topLeft2, topRight2, botLeft2, botRight2, floorBackGoal2, ceilBackGoal2;
-//extern vec2 topRight1, botRight1, topLeft1, botLeft1, floorBackGoal1, ceilBackGoal1;
-//extern vec2 topRight2, botRight2, topLeft2, botLeft2, floorBackGoal2, ceilBackGoal2;
-
 extern const vec2 topLeft1;
 extern const vec2 topRight1;
 extern const vec2 botLeft1;

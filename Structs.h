@@ -71,7 +71,4 @@ struct obb {
     obb(vec2 center, float halfWidth, float halfHeight, float angle) : center(center), halfWidth(halfWidth), halfHeight(halfHeight), angle(angle) {}
 };
 
-
-
-
 #endif // STRUCTS_H_INCLUDED

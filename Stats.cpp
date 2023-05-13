@@ -6,6 +6,8 @@
 #include "PlayerScored.h"
 #include "Explosion.h"
 #include "Sounds.h"
+#include "PlayerScored.h"
+#include "Boost.h"
 
 int prvScoreA = -1;
 int prvScoreB = -1;
@@ -52,9 +54,8 @@ void reset(bool overtime) {
         prvScoreB = -1;
         scoreA = 0;
         scoreB = 0;
-        overtimeBeginTime = 0;
-        scoredBeginTime = 0;
-        displayingScored = 0;
+
+        timerOvertime.stop();
         for (int i = 0; i <= 7; ++i) {
             stopEffect(i);
         }
@@ -78,12 +79,19 @@ void reset(bool overtime) {
 
     lastTime = SDL_GetTicks();
     timeElapsed = 0;
-    timeLeft = 1;
+    timeLeft = 300;
 
-    timer = 300;
+    timer = 1;
+    explosionParticles[0].clear();
     explosionParticles[1].clear();
     explosionParticles[2].clear();
+    boostParticles[0].clear();
+    boostParticles[1].clear();
+    boostParticles[2].clear();
+    startInMidAir = -1;
 
-    reminderBeginTime = 0;
-
+    displayingScored = 0;
+    timerScored.stop();
+    timerReminder.stop();
+    timerExtraExplosion.stop();
 }

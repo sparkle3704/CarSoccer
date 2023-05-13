@@ -57,19 +57,11 @@ class VictoryScreenInstance {
 public:
     VictoryScreenInstance() {};
     void handle();
-    void init();
+    bool init();
 
 private:
     bool onVictoryScreen;
     void handleButtons();
-//    SDL_Surface* winnerSurface = nullptr;
-    std::shared_ptr<SDL_Surface> winnerSurface{nullptr, SDL_FreeSurface};
-    std::shared_ptr<SDL_Texture> winnerTexture{nullptr, SDL_DestroyTexture};
-
-//    SDL_Texture* winnerTexture = nullptr;
-    int width, height;
-    SDL_FRect rect;
-    std::string s;
 };
 
 extern gameState currentState;

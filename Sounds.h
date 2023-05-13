@@ -34,4 +34,6 @@ void stopEffect(int channel);
 void playEffectOnce(Mix_Chunk* effectSound, int channel);
 
 void playMusic();
+
+extern void setMusic(Mix_Music* newMusic);
 #endif // SOUNDS_H_INCLUDED

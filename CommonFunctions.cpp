@@ -82,18 +82,9 @@ std::vector<Point> getCoords(SDL_FRect rect, float angle_degrees) {
     return coords;
 }
 
-//vec2 U, V;
-//int RRRR, GGGG, BBBB;
-
 void drawLine(vec2 u, vec2 v, int r, int g, int b) {
     SDL_SetRenderDrawColor(renderer.get(), r, g, b, 255);
     SDL_RenderDrawLine(renderer.get(), u.x, u.y, v.x, v.y);
-
-//    U = u;
-//    V = v;
-//    RRRR = r;
-//    GGGG = g;
-//    BBBB = b;
 }
 
 Point findParallelVector(const Point& a, const Point& b, const float V) {

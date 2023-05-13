@@ -49,8 +49,6 @@ public:
     SDL_Color textColor;
     float x, y;
     bool middle;
-//    SDL_Surface* textSurface;
-//    SDL_Texture* textTexture;
     std::shared_ptr<SDL_Surface> textSurface{nullptr, SDL_FreeSurface};
     std::shared_ptr<SDL_Texture> textTexture{nullptr, SDL_DestroyTexture};
     Uint64 displayBeginTime;
@@ -100,26 +98,10 @@ extern std::shared_ptr<SDL_Texture> replayButton_Unselected_Texture;
 extern std::shared_ptr<SDL_Texture> victoryP1_Texture;
 extern std::shared_ptr<SDL_Texture> victoryP2_Texture;
 
-//extern SDL_Renderer* renderer;
-//extern SDL_Surface* screenSurface;
-//extern TTF_Font* Font;
-//extern TTF_Font* fontOutline;
-//extern SDL_Window* window;
-//
-
-//extern std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> Font;
-//extern std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> fontOutline;
-
-//extern std::unique_ptr<SDL_Renderer, decltype(&SDL_DestroyRenderer)> renderer;
-//extern std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)> screenSurface;
-
-//extern std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window;
-
 extern std::shared_ptr<SDL_Renderer> renderer;
 extern std::shared_ptr<SDL_Surface> screenSurface;
 extern std::shared_ptr<SDL_Window> window;
 
-//extern TTF_Font* Font;
 extern std::shared_ptr<TTF_Font> Font;
 extern std::shared_ptr<TTF_Font> fontOutline;
 

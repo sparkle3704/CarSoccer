@@ -9,6 +9,7 @@
 
 class Car {
 public:
+    Car() {};
     Car(float xPos, float yPos, int player);
     float goingVelocityX = 0;
     bool canJump = 1;
@@ -77,7 +78,6 @@ private:
     float carBallCollisionVelocityY = 0;
     float carBallCollisionDragAccelerationX = 0;
     float carBallCollisionDragAccelerationY = 0;
-//    SDL_Texture* carTexture = nullptr;
     std::shared_ptr<SDL_Texture> carTexture;
     int player;
 

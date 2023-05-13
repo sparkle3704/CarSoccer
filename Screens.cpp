@@ -11,10 +11,6 @@
 #include "Explosion.h"
 #include "Sounds.h"
 
-//std::shared_ptr<TTF_Font> Font(nullptr, TTF_CloseFont);
-//std::shared_ptr<TTF_Font> fontOutline(nullptr, TTF_CloseFont);
-
-
 bool isRunning = 1;
 bool inOvertime = 0;
 bool unlTimeMode = 0;
@@ -39,14 +35,13 @@ int withinNameField(int mouseX, int mouseY) {
     return 0;
 }
 
-
 void TitleScreenInstance::init() {
     isTyping = 0;
     onTitleScreen = 1;
     showingOptions = 0;
     clicked = 0;
-    Mix_HaltMusic();
-    music = musicTitle;
+    setMusic(musicTitle);
+    reset(0);
 }
 
 void TitleScreenInstance::handleButtons() {
@@ -72,7 +67,7 @@ void TitleScreenInstance::handleButtons() {
 }
 
 void TitleScreenInstance::handle() {
-    init();
+    this->init();
     while (onTitleScreen) {
         playMusic();
         clicked = 0;
@@ -83,9 +78,10 @@ void TitleScreenInstance::handle() {
             }
             SDL_GetMouseState(&mouseX, &mouseY);
 
-            if (showingOptions) {
-                optionsWindow.handleEvent();
+            if ((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == player1_sym_pause || event.key.keysym.sym == player2_sym_pause)) {
+                showingOptions = !showingOptions;
             }
+
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     clicked = 1;
@@ -186,11 +182,9 @@ void OptionsWindowInstance::handleButtons() {
                         muteSFX = !button.state;
                     }
                     else if (button.name == "music") {
-                        ///
                         muteMusic = !button.state;
                     }
                     else if (button.name == "noground") {
-                        ///
                         noGroundMode = button.state;
                     }
                 }
@@ -221,14 +215,14 @@ void GameplayInstance::init() {
     isTyping = 0;
     onGameplay = 1;
     showingOptions = 0;
+    showingPausedMenu = 0;
     clicked = 0;
-    Mix_HaltMusic();
-    music = musicGameplay;
+    setMusic(musicGameplay);
+    reset(0);
 }
 
 void GameplayInstance::handlePausedButtons() {
     SDL_GetMouseState(&mouseX, &mouseY);
-//    std::cerr << mouseX << " " << mouseY << "\n";
     for (auto& button: pausedButtons) {
         if (button.withinArea(mouseX, mouseY)) {
             button.displayImage(1);
@@ -259,8 +253,7 @@ void GameplayInstance::handlePausedButtons() {
 }
 
 void GameplayInstance::handle() {
-    init();
-    reset(0);
+    this->init();
     while (onGameplay) {
         playMusic();
         const Uint8* state = SDL_GetKeyboardState(NULL);
@@ -463,58 +456,30 @@ void GameplayInstance::handle() {
     }
 }
 
-/// no
-//void VictoryScreenInstance::init() {
-//    onVictoryScreen = 1;
-//    music = musicVictory;
-//    Font = TTF_OpenFont(fontPath.c_str(), 100); ///
-//    if (scoreA > scoreB) {
-//        s = player1_name + " " + "WON!";
-//        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), BLUE); ///
-//    }
-//    else {
-//        s = player2_name + " " + "WON!";
-//        winnerSurface = TTF_RenderText_Blended(Font, s.c_str(), ORANGE); ///
-//    }
-//
-//    winnerTexture = SDL_CreateTextureFromSurface(renderer.get(), winnerSurface); ///
-//
-//    width = winnerSurface->w; ///
-//    height = winnerSurface->h; ///
-//    rect = {960 - width/2, 286 - height/2, width, height};
-//
-//    Font = nullptr; ///
-//    TTF_CloseFont(Font); ///
-//    winnerSurface = nullptr;
-//}
-
-void VictoryScreenInstance::init() {
+SmartText smartWon;
+bool VictoryScreenInstance::init() {
     onVictoryScreen = 1;
-    if (music != musicVictory) {
-        music = musicVictory0;
-        Mix_HaltMusic();
-    }
-//    music = musicVictory;
-//    auto FontDeleter = [](TTF_Font* font) { TTF_CloseFont(font); };
-//    std::shared_ptr<TTF_Font> Font(TTF_OpenFont(fontPath.c_str(), 100), FontDeleter);
-
-    Font.reset(TTF_OpenFont(fontPath.c_str(), 100), TTF_CloseFont);
-
-
+    TTF_Font* Font = getFont(100);
     if (scoreA > scoreB) {
-        s = player1_name + " " + "WON!";
-        winnerSurface.reset(TTF_RenderText_Blended(Font.get(), s.c_str(), BLUE), SDL_FreeSurface);
+        std::string s = player1_name + " " + "WON!";
+        if (!smartWon.loadFromRenderedText(Font, s, BLUE)) {
+            std::cerr << "WRONG BLUE" << "\n";
+            return 0;
+        }
     }
     else {
-        s = player2_name + " " + "WON!";
-        winnerSurface.reset(TTF_RenderText_Blended(Font.get(), s.c_str(), ORANGE), SDL_FreeSurface);
+        std::string s = player2_name + " " + "WON!";
+        if (!smartWon.loadFromRenderedText(Font, s, ORANGE)) {
+            std::cerr << "WRONG ORANGE" << "\n";
+            return 0;
+        }
     }
 
-    winnerTexture.reset(SDL_CreateTextureFromSurface(renderer.get(), winnerSurface.get()), SDL_DestroyTexture);
-
-    width = winnerSurface->w;
-    height = winnerSurface->h;
-    rect = {960 - width/2, 286 - height/2, width, height};
+    if (music != musicVictory) {
+        setMusic(musicVictory0);
+    }
+    reset(0);
+    return 1;
 }
 
 void VictoryScreenInstance::handleButtons() { /// replay, options, menu
@@ -540,7 +505,10 @@ void VictoryScreenInstance::handleButtons() { /// replay, options, menu
 }
 
 void VictoryScreenInstance::handle() {
-    init();
+    if (!(this->init())) {
+        return;
+    }
+
     playEffectOnce(victorySound, victoryChannel);
     addExplosion(100, 960, 286, 1);
     addExplosion(100, 960, 286, 2);
@@ -576,7 +544,8 @@ void VictoryScreenInstance::handle() {
             displayImage(victoryP2_Texture.get());
         }
 
-        SDL_RenderCopyF(renderer.get(), winnerTexture.get(), NULL, &rect);
+        smartWon.render(960, 286);
+
         updateExplosion(1);
         renderExplosion(1);
         updateExplosion(2);

@@ -57,7 +57,6 @@ void playMusic() {
         }
     }
     else {
-        std::cerr << "MUSICCC" << "\n";
         if (Mix_PausedMusic() == 1) {
             Mix_ResumeMusic();
         }
@@ -66,5 +65,12 @@ void playMusic() {
                 Mix_PlayMusic(music, -1);
             }
         }
+    }
+}
+
+void setMusic(Mix_Music* newMusic) {
+    if (music != newMusic) {
+        music = newMusic;
+        Mix_HaltMusic();
     }
 }
