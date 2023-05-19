@@ -10,6 +10,8 @@
 #include <vector>
 #include "Explosion.h"
 #include "Sounds.h"
+#include <cstdio>
+#include <cstdlib>
 
 bool isRunning = 1;
 bool inOvertime = 0;
@@ -24,6 +26,7 @@ bool showingOptions = 0;
 bool isTyping, clicked;
 int mouseX, mouseY;
 SDL_Event event;
+FILE* fp = nullptr;
 
 int withinNameField(int mouseX, int mouseY) {
     if (namePlayer[1].withinNameField(mouseX, mouseY)) {
@@ -235,6 +238,9 @@ void GameplayInstance::handlePausedButtons() {
                 }
                 else if (button.name == "menu") {
                     currentState = TITLE_SCREEN;
+//                    std::cout << "scoreA = " << scoreA << " | " << "scoreB = " << scoreB << "\n";
+//                    fprintf(fp, "scoreA = ", scoreA, " | ", "scoreB = ", scoreB, "\n");
+                    fprintf(fp, "scoreA = %d | scoreB = %d\n", scoreA, scoreB);
                     showingOptions = 0;
                     showingPausedMenu = 0;
                     onGameplay = 0;
@@ -254,12 +260,15 @@ void GameplayInstance::handlePausedButtons() {
 
 void GameplayInstance::handle() {
     this->init();
+    fp = fopen("savedScores.txt", "a");
+//    freopen("savedScores.txt", "a", stdout);
     while (onGameplay) {
         playMusic();
         const Uint8* state = SDL_GetKeyboardState(NULL);
         clicked = 0;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
+                fprintf(fp, "scoreA = %d | scoreB = %d\n", scoreA, scoreB);
                 onGameplay = 0;
                 break;
             }
@@ -490,6 +499,9 @@ void VictoryScreenInstance::handleButtons() { /// replay, options, menu
                 playEffectOnce(clickSound, clickChannel);
                 if (button.name != "options") {
                     currentState = button.nextState;
+//                    fprintf(fp, "scoreA = ", scoreA, " | ", "scoreB = ", scoreB, "\n");
+                    fprintf(fp, "scoreA = %d | scoreB = %d\n", scoreA, scoreB);
+//                    std::cout << "scoreA = " << scoreA << " | " << "scoreB = " << scoreB << "\n";
                     onVictoryScreen = 0;
                     break;
                 }
